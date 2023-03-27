@@ -16,13 +16,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Extractor;
-import io.hyperfoil.tools.horreum.entity.json.Label;
-import io.hyperfoil.tools.horreum.entity.json.Run;
-import io.hyperfoil.tools.horreum.entity.json.Schema;
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.json.Transformer;
+import io.hyperfoil.tools.horreum.entity.json.*;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
 import io.hyperfoil.tools.horreum.test.PostgresResource;
 import io.hyperfoil.tools.horreum.test.TestUtil;
@@ -39,11 +33,11 @@ public class SchemaServiceTest extends BaseServiceTest {
    @org.junit.jupiter.api.Test
    public void testValidateRun() throws IOException, InterruptedException {
       JsonNode allowAny = load("/allow-any.json");
-      Schema allowAnySchema = createSchema("any", allowAny.path("$id").asText(), allowAny);
+      SchemaDTO allowAnySchema = createSchema("any", allowAny.path("$id").asText(), allowAny);
       JsonNode allowNone = load("/allow-none.json");
-      Schema allowNoneSchema = createSchema("none", allowNone.path("$id").asText(), allowNone);
+      SchemaDTO allowNoneSchema = createSchema("none", allowNone.path("$id").asText(), allowNone);
 
-      Test test = createTest(createExampleTest("schemaTest"));
+      TestDTO test = createTest(createExampleTest("schemaTest"));
       BlockingQueue<Schema.ValidationEvent> runValidations = eventConsumerQueue(Schema.ValidationEvent.class, Run.EVENT_VALIDATED, e -> checkRunTestId(e.id, test.id));
       BlockingQueue<Schema.ValidationEvent> datasetValidations = eventConsumerQueue(Schema.ValidationEvent.class, DataSet.EVENT_VALIDATED, e -> checkTestId(e.id, test.id));
 
@@ -93,9 +87,9 @@ public class SchemaServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testEditSchema() {
-      Schema schema = createSchema("My schema", "urn:my:schema");
-      int labelId = addLabel(schema, "foo", null, new Extractor("foo", "$.foo", false));
-      int transformerId = createTransformer("my-transformer", schema, "value => value", new Extractor("all", "$.", false)).id;
+      SchemaDTO schema = createSchema("My schema", "urn:my:schema");
+      int labelId = addLabel(schema, "foo", null, new ExtractorDTO("foo", "$.foo", false));
+      int transformerId = createTransformer("my-transformer", schema, "value => value", new ExtractorDTO("all", "$.", false)).id;
 
       schema.name = "Different name";
       schema.description = "Bla bla";
@@ -139,13 +133,13 @@ public class SchemaServiceTest extends BaseServiceTest {
    }
 
    private void testExportImport(boolean wipe) {
-      Schema schema = createSchema("Test schema", "urn:xxx:1.0");
-      addLabel(schema, "foo", null, new Extractor("foo", "$.foo", false));
+      SchemaDTO schema = createSchema("Test schema", "urn:xxx:1.0");
+      addLabel(schema, "foo", null, new ExtractorDTO("foo", "$.foo", false));
       addLabel(schema, "bar", "({bar, goo}) => ({ bar, goo })",
-            new Extractor("bar", "$.bar", true), new Extractor("goo", "$.goo", false));
+            new ExtractorDTO("bar", "$.bar", true), new ExtractorDTO("goo", "$.goo", false));
 
       createTransformer("Blabla", schema, "({x, y}) => ({ z: 1 })",
-            new Extractor("x", "$.x", true), new Extractor("y", "$.y", false));
+            new ExtractorDTO("x", "$.x", true), new ExtractorDTO("y", "$.y", false));
 
       String exportJson = jsonRequest().get("/api/schema/" + schema.id + "/export").then().statusCode(200).extract().body().asString();
       HashMap<String, List<JsonNode>> db = dumpDatabaseContents();

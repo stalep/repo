@@ -5,6 +5,9 @@ import java.nio.charset.StandardCharsets;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import io.hyperfoil.tools.horreum.entity.alerting.ChangeDTO;
+import io.hyperfoil.tools.horreum.entity.json.DataSet;
+import io.hyperfoil.tools.horreum.mapper.ChangeMapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,15 +32,16 @@ public class ChangeToMarkdown implements BodyFormatter {
 
    @Override
    public String format(JsonNode config, Object payload) {
-      if (!(payload instanceof Change.Event)) {
+      if (!(payload instanceof ChangeDTO.Event)) {
          throw new IllegalArgumentException("This formatter accepts only Change.Event!");
       }
-      Change.Event event = (Change.Event) payload;
-      Change change = event.change;
+      ChangeDTO.Event event = (ChangeDTO.Event) payload;
+      ChangeDTO change = event.change;
+      String fingerprint = DataSet.getEntityManager().getReference(DataSet.class, change.dataset.id).getFingerprint();
       return template
             .data("testName", event.testName)
             .data("testNameEncoded", URLEncoder.encode(event.testName, StandardCharsets.UTF_8))
-            .data("fingerprint", URLEncoder.encode(change.dataset.getFingerprint(), StandardCharsets.UTF_8))
+            .data("fingerprint", URLEncoder.encode(fingerprint, StandardCharsets.UTF_8))
             .data("publicUrl", publicUrl)
             .data("testId", String.valueOf(change.variable.testId))
             .data("variable", change.variable.name)

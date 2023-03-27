@@ -3,6 +3,7 @@ package io.hyperfoil.tools.horreum.svc;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.security.RolesAllowed;
@@ -10,10 +11,17 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
+import io.hyperfoil.tools.horreum.entity.ActionLogDTO;
+import io.hyperfoil.tools.horreum.entity.alerting.DatasetLogDTO;
+import io.hyperfoil.tools.horreum.entity.alerting.TransformationLogDTO;
+import io.hyperfoil.tools.horreum.entity.json.TestDTO;
+import io.hyperfoil.tools.horreum.mapper.ActionLogMapper;
+import io.hyperfoil.tools.horreum.mapper.DatasetLogMapper;
+import io.hyperfoil.tools.horreum.mapper.TransformationLogMapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import io.hyperfoil.tools.horreum.api.LogService;
+import io.hyperfoil.tools.horreum.services.LogService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.ActionLog;
 import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;
@@ -54,7 +62,7 @@ public class LogServiceImpl implements LogService {
    @WithRoles
    @RolesAllowed(Roles.TESTER)
    @Override
-   public List<DatasetLog> getDatasetLog(String source, int testId, int level, Integer datasetId, Integer page, Integer limit) {
+   public List<DatasetLogDTO> getDatasetLog(String source, int testId, int level, Integer datasetId, Integer page, Integer limit) {
       page = withDefault(page, 0);
       limit = withDefault(limit, 25);
       PanacheQuery<DatasetLog> query;
@@ -63,7 +71,7 @@ public class LogServiceImpl implements LogService {
       } else {
          query = DatasetLog.find("dataset_id = ?1 AND source = ?2 AND level >= ?3", Sort.descending("timestamp"), datasetId, source, level);
       }
-      return query.page(Page.of(page, limit)).list();
+      return query.page(Page.of(page, limit)).list().stream().map(DatasetLogMapper::from).collect(Collectors.toList());
    }
 
    @Override
@@ -97,15 +105,17 @@ public class LogServiceImpl implements LogService {
    @RolesAllowed(Roles.TESTER)
    @WithRoles
    @Override
-   public List<TransformationLog> getTransformationLog(int testId, int level, Integer runId, Integer page, Integer limit) {
+   public List<TransformationLogDTO> getTransformationLog(int testId, int level, Integer runId, Integer page, Integer limit) {
       page = withDefault(page, 0);
       limit = withDefault(limit, 25);
       if (runId == null || runId <= 0) {
-         return TransformationLog.find("testid = ?1 AND level >= ?2", Sort.descending("timestamp"), testId, level)
+         List<TransformationLog> logs = TransformationLog.find("testid = ?1 AND level >= ?2", Sort.descending("timestamp"), testId, level)
                .page(Page.of(page, limit)).list();
+         return logs.stream().map(TransformationLogMapper::from).collect(Collectors.toList());
       } else {
-         return TransformationLog.find("testid = ?1 AND level >= ?2 AND runid = ?3", Sort.descending("timestamp"), testId, level, runId)
+         List<TransformationLog> logs = TransformationLog.find("testid = ?1 AND level >= ?2 AND runid = ?3", Sort.descending("timestamp"), testId, level, runId)
                .page(Page.of(page, limit)).list();
+         return logs.stream().map(TransformationLogMapper::from).collect(Collectors.toList());
       }
    }
 
@@ -140,11 +150,12 @@ public class LogServiceImpl implements LogService {
    @Override
    @WithRoles
    @RolesAllowed(Roles.TESTER)
-   public List<ActionLog> getActionLog(int testId, int level, Integer page, Integer limit) {
+   public List<ActionLogDTO> getActionLog(int testId, int level, Integer page, Integer limit) {
       page = withDefault(page, 0);
       limit = withDefault(limit, 25);
-      return ActionLog.find("testid = ?1 AND level >= ?2", Sort.descending("timestamp"), testId, level)
+      List<ActionLog> logs = ActionLog.find("testid = ?1 AND level >= ?2", Sort.descending("timestamp"), testId, level)
                .page(Page.of(page, limit)).list();
+      return logs.stream().map(ActionLogMapper::from).collect(Collectors.toList());
    }
 
    @Override

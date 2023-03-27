@@ -85,9 +85,9 @@ public class DataPoint extends PanacheEntityBase {
       @Override
       public String toString() {
          return "DataPoint.Event{" +
-               "dataPoint=" + dataPoint +
-               ", notify=" + notify +
-               '}';
+                 "dataPoint=" + dataPoint +
+                 ", notify=" + notify +
+                 '}';
       }
    }
 

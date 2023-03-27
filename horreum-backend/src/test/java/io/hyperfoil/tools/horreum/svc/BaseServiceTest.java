@@ -32,6 +32,10 @@ import javax.transaction.TransactionManager;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
+import io.hyperfoil.tools.horreum.entity.ExperimentComparisonDTO;
+import io.hyperfoil.tools.horreum.entity.ExperimentProfileDTO;
+import io.hyperfoil.tools.horreum.entity.alerting.*;
+import io.hyperfoil.tools.horreum.entity.json.*;
 import org.hibernate.query.NativeQuery;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -50,24 +54,6 @@ import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.changedetection.RelativeDifferenceChangeDetectionModel;
 import io.hyperfoil.tools.horreum.entity.ExperimentComparison;
 import io.hyperfoil.tools.horreum.entity.ExperimentProfile;
-import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetection;
-import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
-import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRule;
-import io.hyperfoil.tools.horreum.entity.alerting.Variable;
-import io.hyperfoil.tools.horreum.entity.alerting.Watch;
-import io.hyperfoil.tools.horreum.entity.json.Access;
-import io.hyperfoil.tools.horreum.entity.json.AllowedSite;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Action;
-import io.hyperfoil.tools.horreum.entity.json.Label;
-import io.hyperfoil.tools.horreum.entity.json.Extractor;
-import io.hyperfoil.tools.horreum.entity.json.Run;
-import io.hyperfoil.tools.horreum.entity.json.Schema;
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.json.Transformer;
-import io.hyperfoil.tools.horreum.entity.json.View;
-import io.hyperfoil.tools.horreum.entity.json.ViewComponent;
 import io.hyperfoil.tools.horreum.experiment.RelativeDifferenceExperimentModel;
 import io.hyperfoil.tools.horreum.server.CloseMe;
 import io.hyperfoil.tools.horreum.server.RoleManager;
@@ -127,7 +113,7 @@ public class BaseServiceTest {
          return ADMIN_TOKEN;
       }
    }
-   protected static ObjectNode runWithValue(double value, Schema schema) {
+   protected static ObjectNode runWithValue(double value, SchemaDTO schema) {
       ObjectNode runJson = JsonNodeFactory.instance.objectNode();
       runJson.put("$schema", schema.uri);
       runJson.put("value", value);
@@ -139,9 +125,9 @@ public class BaseServiceTest {
       return runJson;
    }
 
-   protected static ObjectNode runWithValue(double value, Schema... schemas) {
+   protected static ObjectNode runWithValue(double value, SchemaDTO... schemas) {
       ObjectNode root = null;
-      for (Schema s : schemas) {
+      for (SchemaDTO s : schemas) {
          ObjectNode n = runWithValue(value, s);
          if (root == null ) {
             root = n;
@@ -202,15 +188,15 @@ public class BaseServiceTest {
       TestUtil.eventually(() -> TestUtil.isMessageBusEmpty(tm, em));
    }
 
-   public static Test createExampleTest(String testName) {
-      Test test = new Test();
+   public static TestDTO createExampleTest(String testName) {
+      TestDTO test = new TestDTO();
       test.name = testName;
       test.description = "Bar";
       test.owner = TESTER_ROLES[0];
-      View defaultView = new View();
+      ViewDTO defaultView = new ViewDTO();
       defaultView.name = "Default";
       defaultView.components = new ArrayList<>();
-      defaultView.components.add(new ViewComponent("Some column", null, "foo"));
+      defaultView.components.add(new ViewComponentDTO("Some column", null, "foo"));
       test.views = Collections.singleton(defaultView);
       test.transformers = new ArrayList<>();
       return test;
@@ -271,16 +257,16 @@ public class BaseServiceTest {
       return runId;
    }
 
-   protected Test createTest(Test test) {
+   protected TestDTO createTest(TestDTO test) {
       return jsonRequest()
             .body(test)
             .post("/api/test")
             .then()
             .statusCode(200)
-            .extract().body().as(Test.class);
+            .extract().body().as(TestDTO.class);
    }
 
-   protected void deleteTest(Test test) {
+   protected void deleteTest(TestDTO test) {
       RestAssured.given().auth().oauth2(getTesterToken())
             .delete("/api/test/" + test.id)
             .then()
@@ -301,15 +287,15 @@ public class BaseServiceTest {
       return info.getTestClass().map(Class::getName).orElse("<unknown>") + "." + info.getDisplayName();
    }
 
-   protected Schema createExampleSchema(TestInfo info) {
+   protected SchemaDTO createExampleSchema(TestInfo info) {
       String name = info.getTestClass().map(Class::getName).orElse("<unknown>") + "." + info.getDisplayName();
-      Schema schema = createSchema(name, uriForTest(info, "1.0"));
-      addLabel(schema, "value", null, new Extractor("value", "$.value", false));
+      SchemaDTO schema = createSchema(name, uriForTest(info, "1.0"));
+      addLabel(schema, "value", null, new ExtractorDTO("value", "$.value", false));
       return schema;
    }
 
-   protected Schema createExampleSchema(String name, String className, String displayName, boolean label) {
-      Schema schema = new Schema();
+   protected SchemaDTO createExampleSchema(String name, String className, String displayName, boolean label) {
+      SchemaDTO schema = new SchemaDTO();
       schema.owner = TESTER_ROLES[0];
       schema.access = Access.PUBLIC;
       schema.name = name + "." + displayName;
@@ -319,18 +305,18 @@ public class BaseServiceTest {
       schema.id = id;
 
       if (label) {
-         addLabel(schema, "value", null, new Extractor("value", "$.value", false));
+         addLabel(schema, "value", null, new ExtractorDTO("value", "$.value", false));
       }
       assertNotNull(schema.id);
       return schema;
    }
 
-   protected Schema createSchema(String name, String uri) {
+   protected SchemaDTO createSchema(String name, String uri) {
       return createSchema(name, uri, null);
    }
 
-   protected Schema createSchema(String name, String uri, JsonNode jsonSchema) {
-      Schema schema = new Schema();
+   protected SchemaDTO createSchema(String name, String uri, JsonNode jsonSchema) {
+      SchemaDTO schema = new SchemaDTO();
       schema.owner = TESTER_ROLES[0];
       schema.name = name;
       schema.uri = uri;
@@ -338,14 +324,14 @@ public class BaseServiceTest {
       return addOrUpdateSchema(schema);
    }
 
-   protected Schema addOrUpdateSchema(Schema schema) {
+   protected SchemaDTO addOrUpdateSchema(SchemaDTO schema) {
       Response response = jsonRequest().body(schema).post("/api/schema");
       response.then().statusCode(200);
       schema.id = Integer.parseInt(response.body().asString());
       return schema;
    }
 
-   protected void deleteSchema(Schema schema) {
+   protected void deleteSchema(SchemaDTO schema) {
       jsonRequest().delete("/api/schema/" + schema.id).then().statusCode(204);
    }
 
@@ -353,19 +339,19 @@ public class BaseServiceTest {
       return "urn:" + info.getTestClass().map(Class::getName).orElse("<unknown>") + ":" + info.getDisplayName() + ":" + suffix;
    }
 
-   protected int addLabel(Schema schema, String name, String function, Extractor... extractors) {
+   protected int addLabel(SchemaDTO schema, String name, String function, ExtractorDTO... extractors) {
       return postLabel(schema, name, function, null, extractors);
    }
 
-   protected int updateLabel(Schema schema, int labelId, String name, String function, Extractor... extractors) {
+   protected int updateLabel(SchemaDTO schema, int labelId, String name, String function, ExtractorDTO... extractors) {
       return postLabel(schema, name, function, l -> l.id = labelId, extractors);
    }
 
-   protected int postLabel(Schema schema, String name, String function, Consumer<Label> mutate, Extractor... extractors) {
-      Label l = new Label();
+   protected int postLabel(SchemaDTO schema, String name, String function, Consumer<LabelDTO> mutate, ExtractorDTO... extractors) {
+      LabelDTO l = new LabelDTO();
       l.name = name;
       l.function = function;
-      l.schema = schema;
+      l.schemaId = schema.id;
       l.owner = TESTER_ROLES[0];
       l.access = Access.PUBLIC;
       l.extractors = Arrays.asList(extractors);
@@ -377,15 +363,15 @@ public class BaseServiceTest {
       return Integer.parseInt(response.body().asString());
    }
 
-   protected void deleteLabel(Schema schema, int labelId) {
+   protected void deleteLabel(SchemaDTO schema, int labelId) {
       jsonRequest().delete("/api/schema/" + schema.id + "/labels/" + labelId).then().statusCode(204);
    }
 
-   protected void setTestVariables(Test test, String name, String label, ChangeDetection... rds) {
+   protected void setTestVariables(TestDTO test, String name, String label, ChangeDetection... rds) {
       setTestVariables(test, name, Collections.singletonList(label), rds);
    }
 
-   protected void setTestVariables(Test test, String name, List<String> labels, ChangeDetection... rds) {
+   protected void setTestVariables(TestDTO test, String name, List<String> labels, ChangeDetection... rds) {
       ArrayNode variables = JsonNodeFactory.instance.arrayNode();
       ObjectNode variable = JsonNodeFactory.instance.objectNode();
       variable.put("testid", test.id);
@@ -441,7 +427,7 @@ public class BaseServiceTest {
       return trashedQueue;
    }
 
-   protected <T> T withExampleDataset(Test test, JsonNode data, Function<DataSet, T> testLogic) {
+   protected <T> T withExampleDataset(TestDTO test, JsonNode data, Function<DataSet, T> testLogic) {
       BlockingQueue<DataSet.EventNew> dataSetQueue = eventConsumerQueue(DataSet.EventNew.class, DataSet.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       try {
          Run run = new Run();
@@ -492,7 +478,7 @@ public class BaseServiceTest {
       }
    }
 
-   protected void addToken(Test test, int permissions, String value) {
+   protected void addToken(TestDTO test, int permissions, String value) {
       ObjectNode token = JsonNodeFactory.instance.objectNode();
       token.put("value", value);
       token.put("permissions", permissions);
@@ -506,27 +492,29 @@ public class BaseServiceTest {
       return RestAssured.given().auth().oauth2(getTesterToken());
    }
 
-   protected void addTransformer(Test test, Transformer... transformers){
+   protected void addTransformer(TestDTO test, TransformerDTO... transformers){
       List<Integer> ids = new ArrayList<>();
       assertNotNull(test.id);
-      for (Transformer t : transformers) {
+      for (TransformerDTO t : transformers) {
          ids.add(t.id);
       }
       jsonRequest().body(ids).post("/api/test/" + test.id + "/transformers").then().assertThat().statusCode(204);
    }
 
-   protected Transformer createTransformer(String name, Schema schema, String function, Extractor... paths) {
-      Transformer transformer = new Transformer();
+   protected TransformerDTO createTransformer(String name, SchemaDTO schema, String function, ExtractorDTO... paths) {
+      TransformerDTO transformer = new TransformerDTO();
       transformer.name = name;
       transformer.extractors = new ArrayList<>();
-      for (Extractor path : paths) {
+      for (ExtractorDTO path : paths) {
          if (path != null) {
             transformer.extractors.add(path);
          }
       }
       transformer.owner = TESTER_ROLES[0];
       transformer.access = Access.PUBLIC;
-      transformer.schema = schema;
+      transformer.schemaId = schema.id;
+      transformer.schemaUri = schema.uri;
+      transformer.schemaName = schema.name;
       transformer.function = function;
       transformer.targetSchemaUri = postFunctionSchemaUri(schema);
       Integer id = jsonRequest().body(transformer).post("/api/schema/"+schema.id+"/transformers")
@@ -535,7 +523,7 @@ public class BaseServiceTest {
       return transformer;
    }
 
-   protected String postFunctionSchemaUri(Schema s) {
+   protected String postFunctionSchemaUri(SchemaDTO s) {
       return "uri:" + s.name + "-post-function";
    }
 
@@ -564,7 +552,7 @@ public class BaseServiceTest {
             .body(prefix).post("/api/action/allowedSites").then().statusCode(200);
    }
 
-   protected Response addTestHttpAction(Test test, String event, String url) {
+   protected Response addTestHttpAction(TestDTO test, String event, String url) {
       Action action = new Action();
       action.event = event;
       action.type = HttpAction.TYPE_HTTP;
@@ -573,7 +561,7 @@ public class BaseServiceTest {
       return jsonRequest().body(action).post("/api/test/" + test.id + "/action");
    }
 
-   protected Response addTestGithubIssueCommentAction(Test test, String event, String formatter, String owner, String repo, String issue, String secretToken) {
+   protected Response addTestGithubIssueCommentAction(TestDTO test, String event, String formatter, String owner, String repo, String issue, String secretToken) {
       Action action = new Action();
       action.event = event;
       action.type = GitHubIssueCommentAction.TYPE_GITHUB_ISSUE_COMMENT;
@@ -597,11 +585,11 @@ public class BaseServiceTest {
             .header(HttpHeaders.CONTENT_TYPE, "application/json").body(action).post("/api/action");
    }
 
-   protected ChangeDetection addChangeDetectionVariable(Test test) {
+   protected ChangeDetection addChangeDetectionVariable(TestDTO test) {
       return addChangeDetectionVariable(test, 0.1, 2);
    }
 
-   protected ChangeDetection addChangeDetectionVariable(Test test, double threshold, int window) {
+   protected ChangeDetection addChangeDetectionVariable(TestDTO test, double threshold, int window) {
       ChangeDetection cd = new ChangeDetection();
       cd.model = RelativeDifferenceChangeDetectionModel.NAME;
       cd.config = JsonNodeFactory.instance.objectNode().put("threshold", threshold).put("minPrevious", window).put("window", window).put("filter", "mean");
@@ -609,9 +597,9 @@ public class BaseServiceTest {
       return cd;
    }
 
-   protected int addMissingDataRule(Test test, String ruleName, ArrayNode labels, String condition, int maxStaleness) {
-      MissingDataRule rule = new MissingDataRule();
-      rule.test = test;
+   protected int addMissingDataRule(TestDTO test, String ruleName, ArrayNode labels, String condition, int maxStaleness) {
+      MissingDataRuleDTO rule = new MissingDataRuleDTO();
+      rule.testId = test.id;
       rule.name = ruleName;
       rule.condition = condition;
       rule.labels = labels;
@@ -620,16 +608,17 @@ public class BaseServiceTest {
       return Integer.parseInt(ruleIdString);
    }
 
-   protected void addExperimentProfile(Test test, String name, Variable... variables) {
-      ExperimentProfile profile = new ExperimentProfile();
+   protected void addExperimentProfile(TestDTO test, String name, Variable... variables) {
+      ExperimentProfileDTO profile = new ExperimentProfileDTO();
       profile.name = name;
-      profile.test = test;
+      profile.testId = test.id;
       profile.selectorLabels = JsonNodeFactory.instance.arrayNode().add("isSnapshot");
       profile.baselineLabels = JsonNodeFactory.instance.arrayNode().add("isSnapshot");
       profile.baselineFilter = "snapshot => !snapshot";
       profile.comparisons = Stream.of(variables).map(v -> {
-         ExperimentComparison comp = new ExperimentComparison();
-         comp.variable = v;
+         ExperimentComparisonDTO comp = new ExperimentComparisonDTO();
+         comp.variableName = v.name;
+         comp.variableId = v.id;
          comp.model = RelativeDifferenceExperimentModel.NAME;
          comp.config = JsonNodeFactory.instance.objectNode().setAll(new RelativeDifferenceExperimentModel().config().defaults);
          return comp;

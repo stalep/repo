@@ -45,19 +45,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 import com.vladmihalcea.hibernate.type.util.MapResultTransformer;
-import io.hyperfoil.tools.horreum.api.QueryResult;
-import io.hyperfoil.tools.horreum.api.RunService;
-import io.hyperfoil.tools.horreum.api.SchemaService;
-import io.hyperfoil.tools.horreum.api.SqlService;
+import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
+import io.hyperfoil.tools.horreum.mapper.RunMapper;
+import io.hyperfoil.tools.horreum.services.QueryResult;
+import io.hyperfoil.tools.horreum.services.RunService;
+import io.hyperfoil.tools.horreum.services.SchemaService;
+import io.hyperfoil.tools.horreum.services.SqlService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
 import io.hyperfoil.tools.horreum.entity.alerting.TransformationLog;
-import io.hyperfoil.tools.horreum.entity.json.Access;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Run;
-import io.hyperfoil.tools.horreum.entity.json.Schema;
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.json.Transformer;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.hyperfoil.tools.horreum.server.WithToken;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
@@ -327,7 +324,7 @@ public class RunServiceImpl implements RunService {
    @WithToken
    @Transactional
    @Override
-   public Response add(String testNameOrId, String owner, Access access, String token, Run run) {
+   public Response add(String testNameOrId, String owner, Access access, String token, RunDTO run) {
       if (owner != null) {
          run.owner = owner;
       }
@@ -337,7 +334,7 @@ public class RunServiceImpl implements RunService {
       log.debugf("About to add new run to test %s using owner", testNameOrId, owner);
       Test test = testService.ensureTestExists(testNameOrId, token);
       run.testid = test.id;
-      Integer runId = addAuthenticated(run, test);
+      Integer runId = addAuthenticated(RunMapper.to(run), test);
       return Response.status(Response.Status.OK).entity(String.valueOf(runId)).header(HttpHeaders.LOCATION, "/run/" + runId).build();
    }
 

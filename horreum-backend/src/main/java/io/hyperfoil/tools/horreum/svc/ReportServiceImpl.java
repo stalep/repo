@@ -23,6 +23,10 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.transaction.Transactional;
 
+import io.hyperfoil.tools.horreum.entity.json.TestDTO;
+import io.hyperfoil.tools.horreum.entity.report.*;
+import io.hyperfoil.tools.horreum.mapper.ReportCommentMapper;
+import io.hyperfoil.tools.horreum.mapper.TableReportMapper;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
@@ -38,18 +42,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 
-import io.hyperfoil.tools.horreum.api.ReportService;
+import io.hyperfoil.tools.horreum.services.ReportService;
 import io.hyperfoil.tools.horreum.api.SortDirection;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
 import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.report.ReportComment;
-import io.hyperfoil.tools.horreum.entity.report.ReportComponent;
-import io.hyperfoil.tools.horreum.entity.report.ReportLog;
-import io.hyperfoil.tools.horreum.entity.report.TableReport;
-import io.hyperfoil.tools.horreum.entity.report.TableReportConfig;
 import io.hyperfoil.tools.horreum.server.WithRoles;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.runtime.Startup;
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -149,33 +147,34 @@ public class ReportServiceImpl implements ReportService {
    @PermitAll
    @WithRoles
    @Override
-   public TableReportConfig getTableReportConfig(int id) {
+   public TableReportConfigDTO getTableReportConfig(int id) {
       TableReportConfig config = TableReportConfig.findById(id);
       if (config == null) {
          throw ServiceException.notFound("Table report config does not exist or insufficient permissions.");
       }
-      return config;
+      return TableReportMapper.fromTableReportConfig(config);
    }
 
    @RolesAllowed(Roles.TESTER)
    @WithRoles
    @Override
    @Transactional
-   public TableReport updateTableReportConfig(TableReportConfig config, Integer reportId) {
-      if (config.id != null && config.id < 0) {
-         config.id = null;
+   public TableReportDTO updateTableReportConfig(TableReportConfigDTO dto, Integer reportId) {
+      if (dto.id != null && dto.id < 0) {
+         dto.id = null;
       }
       boolean createNewConfig = reportId == null || reportId < 0;
       if (createNewConfig) {
          // We are going to create a new report, therefore we'll use a new config
-         config.id = null;
+         dto.id = null;
       }
-      for (var component : config.components) {
+      for (var component : dto.components) {
          if (component.id != null && component.id < 0 || createNewConfig) {
             component.id = null;
          }
       }
-      validateTableConfig(config);
+      validateTableConfig(dto);
+      TableReportConfig config = TableReportMapper.toTableReportConfig(dto);
       config.ensureLinked();
       TableReport report = createTableReport(config, reportId);
       if (config.id == null) {
@@ -193,10 +192,10 @@ public class ReportServiceImpl implements ReportService {
          em.merge(report);
       }
       em.flush();
-      return report;
+      return TableReportMapper.from(report);
    }
 
-   private void validateTableConfig(TableReportConfig config) {
+   private void validateTableConfig(TableReportConfigDTO config) {
       if (config == null) {
          throw ServiceException.badRequest("No config");
       }
@@ -228,10 +227,10 @@ public class ReportServiceImpl implements ReportService {
    @PermitAll
    @WithRoles
    @Override
-   public TableReport getTableReport(int id) {
+   public TableReportDTO getTableReport(int id) {
       TableReport report = TableReport.findById(id);
       Hibernate.initialize(report.config);
-      return report;
+      return TableReportMapper.from(report);
    }
 
    @RolesAllowed(Roles.TESTER)
@@ -251,7 +250,8 @@ public class ReportServiceImpl implements ReportService {
    @WithRoles
    @Override
    @Transactional
-   public ReportComment updateComment(int reportId, ReportComment comment) {
+   public ReportCommentDTO updateComment(int reportId, ReportCommentDTO dto) {
+      ReportComment comment = ReportCommentMapper.to(dto);
       if (comment.id == null || comment.id < 0) {
          comment.id = null;
          comment.report = TableReport.findById(reportId);
@@ -265,7 +265,7 @@ public class ReportServiceImpl implements ReportService {
          comment.report = TableReport.findById(reportId);
          em.merge(comment);
       }
-      return comment;
+      return ReportCommentMapper.from(comment);
    }
 
    @Override
@@ -280,9 +280,9 @@ public class ReportServiceImpl implements ReportService {
    @Transactional
    @Override
    public void importTableReportConfig(JsonNode json) {
-      TableReportConfig config;
+      TableReportConfigDTO config;
       try {
-         config = Util.OBJECT_MAPPER.treeToValue(json, TableReportConfig.class);
+         config = Util.OBJECT_MAPPER.treeToValue(json, TableReportConfigDTO.class);
       } catch (JsonProcessingException e) {
          throw ServiceException.badRequest("Cannot deserialize table report configuration: " + e.getMessage());
       }
@@ -294,11 +294,12 @@ public class ReportServiceImpl implements ReportService {
    @PermitAll
    @WithRoles
    @Override
-   public TableReport previewTableReport(TableReportConfig config, Integer reportId) {
-      validateTableConfig(config);
+   public TableReportDTO previewTableReport(TableReportConfigDTO dto, Integer reportId) {
+      validateTableConfig(dto);
+      TableReportConfig config = TableReportMapper.toTableReportConfig(dto);
       TableReport report = createTableReport(config, reportId);
       em.detach(report);
-      return report;
+      return TableReportMapper.from(report);
    }
 
    private TableReport createTableReport(TableReportConfig config, Integer reportId) {

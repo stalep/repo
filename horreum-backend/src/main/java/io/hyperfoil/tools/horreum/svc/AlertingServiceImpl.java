@@ -42,20 +42,17 @@ import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
-import io.hyperfoil.tools.horreum.api.AlertingService;
 import io.hyperfoil.tools.horreum.api.ConditionConfig;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.changedetection.FixedThresholdModel;
 import io.hyperfoil.tools.horreum.entity.Fingerprint;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
-import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetection;
-import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRule;
-import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRuleResult;
-import io.hyperfoil.tools.horreum.entity.alerting.RunExpectation;
+import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.changedetection.ChangeDetectionModel;
 import io.hyperfoil.tools.horreum.changedetection.RelativeDifferenceChangeDetectionModel;
 
+import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.mapper.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.hibernate.Hibernate;
@@ -75,16 +72,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.vladmihalcea.hibernate.type.array.IntArrayType;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 
-import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
-import io.hyperfoil.tools.horreum.entity.alerting.Variable;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Run;
-import io.hyperfoil.tools.horreum.entity.json.Test;
 import io.hyperfoil.tools.horreum.grafana.Dashboard;
 import io.hyperfoil.tools.horreum.grafana.GrafanaClient;
 import io.hyperfoil.tools.horreum.grafana.Target;
 import io.hyperfoil.tools.horreum.server.WithRoles;
+import io.hyperfoil.tools.horreum.services.AlertingService;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
@@ -383,12 +375,14 @@ public class AlertingServiceImpl implements AlertingService {
 
    JsonNode exportTest(int testId) {
       ObjectNode config = JsonNodeFactory.instance.objectNode();
-      config.set("variables", Util.OBJECT_MAPPER.valueToTree(Variable.list("testid", testId)));
-      config.set("missingDataRules", Util.OBJECT_MAPPER.valueToTree(MissingDataRule.list("test_id", testId)));
+      List<Variable> variables = Variable.list("testid", testId);
+      config.set("variables", Util.OBJECT_MAPPER.valueToTree(variables.stream().map(VariableMapper::from).collect(Collectors.toList())));
+      List<MissingDataRule> rules = MissingDataRule.list("test_id", testId);
+      config.set("missingDataRules", Util.OBJECT_MAPPER.valueToTree(rules.stream().map(MissingDataRuleMapper::from).collect(Collectors.toList())));
       return config;
    }
 
-   void importTest(int testId, JsonNode config) {
+   void importTest(int testId, JsonNode config, boolean forceUseTestId) {
       JsonNode variablesNode = config.path("variables");
       if (variablesNode.isMissingNode() || variablesNode.isNull()) {
          log.debugf("Importing test %d: no change detection variables", testId);
@@ -396,10 +390,15 @@ public class AlertingServiceImpl implements AlertingService {
          log.debugf("Importing %d change detection variables for test %d", variablesNode.size(), testId);
          for (var node : variablesNode) {
             try {
-               Variable variable = Util.OBJECT_MAPPER.treeToValue(node, Variable.class);
+               Variable variable = VariableMapper.to(Util.OBJECT_MAPPER.treeToValue(node, VariableDTO.class));
                variable.testId = testId;
                variable.ensureLinked();
-               em.merge(variable);
+               if(forceUseTestId) {
+                 variable.flushIds();
+                 variable.persist();
+               }
+               else
+                  em.merge(variable);
             } catch (JsonProcessingException e) {
                throw ServiceException.badRequest("Cannot deserialize change detection variable with id '" + node.path("id").asText() + "': " + e.getMessage());
             }
@@ -414,7 +413,14 @@ public class AlertingServiceImpl implements AlertingService {
          log.debugf("Importing %d missing data rules for test %d", rulesNode.size(), testId);
          for (var node : rulesNode) {
             try {
-               em.merge(Util.OBJECT_MAPPER.treeToValue(node, MissingDataRule.class));
+               if(forceUseTestId) {
+                  MissingDataRuleDTO dto = Util.OBJECT_MAPPER.treeToValue(node, MissingDataRuleDTO.class);
+                  dto.testId = testId;
+                  dto.id = null;
+                  em.persist(MissingDataRuleMapper.to(dto));
+               }
+               else
+                  em.merge(MissingDataRuleMapper.to(Util.OBJECT_MAPPER.treeToValue(node, MissingDataRuleDTO.class)));
             } catch (JsonProcessingException e) {
                throw ServiceException.badRequest("Cannot deserialize missing data rule with id '" + node.path("id").asText() + "': " + e.getMessage());
             }
@@ -543,7 +549,8 @@ public class AlertingServiceImpl implements AlertingService {
       dataPoint.timestamp = timestamp;
       dataPoint.value = value;
       dataPoint.persist();
-      messageBus.publish(DataPoint.EVENT_NEW, dataset.testid, new DataPoint.Event(dataPoint, dataset.testid, notify));
+      messageBus.publish(DataPoint.EVENT_NEW, dataset.testid,
+              new DataPoint.Event(dataPoint, dataset.testid, notify));
    }
 
    private void logCalculationMessage(DataSet dataSet, int level, String format, Object... args) {
@@ -685,7 +692,8 @@ public class AlertingServiceImpl implements AlertingService {
                em.persist(change);
                Hibernate.initialize(change.dataset.run.id);
                String testName = Test.<Test>findByIdOptional(variable.testId).map(test -> test.name).orElse("<unknown>");
-               messageBus.publish(Change.EVENT_NEW, change.dataset.testid, new Change.Event(change, testName, info, notify));
+               messageBus.publish(Change.EVENT_NEW, change.dataset.testid,
+                       new Change.Event(change, testName, info, notify));
             });
          }
       }
@@ -722,20 +730,22 @@ public class AlertingServiceImpl implements AlertingService {
    @Override
    @WithRoles
    @PermitAll
-   public List<Variable> variables(Integer testId) {
+   public List<VariableDTO> variables(Integer testId) {
+      List<Variable> variables;
       if (testId != null) {
-         return Variable.list("testid", testId);
+         variables = Variable.list("testid", testId);
       } else {
-         return Variable.listAll();
+         variables = Variable.listAll();
       }
+      return variables.stream().map(VariableMapper::from).collect(Collectors.toList());
    }
 
    @Override
    @WithRoles
    @RolesAllowed("tester")
    @Transactional
-   public void updateVariables(int testId, List<Variable> variables) {
-      for (Variable v : variables) {
+   public void updateVariables(int testId, List<VariableDTO> variablesDTO) {
+      for (VariableDTO v : variablesDTO) {
          if (v.name == null || v.name.isBlank()) {
             throw ServiceException.badRequest("Variable name is mandatory!");
          } else if (v.labels == null || !v.labels.isArray() ||
@@ -744,6 +754,7 @@ public class AlertingServiceImpl implements AlertingService {
          }
       }
       try {
+         List<Variable> variables = variablesDTO.stream().map(VariableMapper::to).collect(Collectors.toList());
          List<Variable> currentVariables = Variable.list("testid", testId);
          updateCollection(currentVariables, variables, v -> v.id, item -> {
             if (item.id != null && item.id <= 0) {
@@ -867,7 +878,8 @@ public class AlertingServiceImpl implements AlertingService {
       for (Map.Entry<String, List<Variable>> entry : byGroup.entrySet()) {
          entry.getValue().sort(Comparator.comparing(v -> v.name));
          Dashboard.Panel panel = new Dashboard.Panel(entry.getKey(), new Dashboard.GridPos(12 * (i % 2), 9 * (i / 2), 12, 9));
-         info.panels.add(new PanelInfo(entry.getKey(), entry.getValue()));
+         info.panels.add(new PanelInfo(entry.getKey(),
+                 entry.getValue().stream().map(VariableMapper::from).collect(Collectors.toList())));
          for (Variable variable : entry.getValue()) {
             panel.targets.add(new Target(variable.id + ";" + fingerprint, "timeseries", "T" + i));
          }
@@ -920,7 +932,8 @@ public class AlertingServiceImpl implements AlertingService {
          dashboard.uid = response.dashboard.uid;
          dashboard.url = response.meta.url;
          for (var entry : groupedVariables(variables).entrySet()) {
-            dashboard.panels.add(new PanelInfo(entry.getKey(), entry.getValue()));
+            dashboard.panels.add(new PanelInfo(entry.getKey(),
+                    entry.getValue().stream().map(VariableMapper::from).collect(Collectors.toList())));
          }
       }
       return dashboard;
@@ -929,28 +942,30 @@ public class AlertingServiceImpl implements AlertingService {
    @Override
    @WithRoles
    @PermitAll
-   public List<Change> changes(int varId, String fingerprint) {
+   public List<ChangeDTO> changes(int varId, String fingerprint) {
       Variable v = Variable.findById(varId);
       if (v == null) {
          throw ServiceException.notFound("Variable " + varId + " not found");
       }
       JsonNode fp = Util.parseFingerprint(fingerprint);
       if (fp == null) {
-         return Change.list("variable", v);
+         List<Change> changes = Change.list("variable", v);
+         return changes.stream().map(ChangeMapper::from).collect(Collectors.toList());
       }
       //noinspection unchecked
-      return em.createNativeQuery("SELECT change.* FROM change JOIN fingerprint fp ON change.dataset_id = fp.dataset_id " +
+      List<Change> changes = em.createNativeQuery("SELECT change.* FROM change JOIN fingerprint fp ON change.dataset_id = fp.dataset_id " +
             "WHERE variable_id = ?1 AND json_equals(fp.fingerprint, ?2)", Change.class)
             .setParameter(1, varId).unwrap(NativeQuery.class)
             .setParameter(2, fp, JsonNodeBinaryType.INSTANCE)
             .getResultList();
+      return changes.stream().map(ChangeMapper::from).collect(Collectors.toList());
    }
 
    @Override
    @WithRoles
    @RolesAllowed(Roles.TESTER)
    @Transactional
-   public void updateChange(int id, Change apiChange) {
+   public void updateChange(int id, ChangeDTO apiChange) {
       try {
          if (id != apiChange.id) {
             throw ServiceException.badRequest("Path ID and entity don't match");
@@ -1071,7 +1086,7 @@ public class AlertingServiceImpl implements AlertingService {
       if (recalculation != null) {
          status.totalDatasets = recalculation.datasets.size();
          status.errors = recalculation.errors;
-         status.datasetsWithoutValue = recalculation.datasetsWithoutValue.values();
+         status.datasetsWithoutValue = recalculation.datasetsWithoutValue.values().stream().map(DataSetMapper::fromInfo).collect(Collectors.toList());
       }
       return status;
    }
@@ -1138,11 +1153,12 @@ public class AlertingServiceImpl implements AlertingService {
    @PermitAll
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Override
-   public List<RunExpectation> expectations() {
+   public List<RunExpectationDTO> expectations() {
       if (!isTest.orElse(false)) {
          throw ServiceException.notFound("Not available without test mode.");
       }
-      return RunExpectation.listAll();
+      List<RunExpectation> expectations =  RunExpectation.listAll();
+      return expectations.stream().map(RunExpectationMapper::from).collect(Collectors.toList());
    }
 
    @WithRoles
@@ -1175,7 +1191,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @PermitAll
    @Override
-   public List<ChangeDetection> defaultChangeDetectionConfigs() {
+   public List<ChangeDetectionDTO> defaultChangeDetectionConfigs() {
       ChangeDetection lastDatapoint = new ChangeDetection();
       lastDatapoint.model = RelativeDifferenceChangeDetectionModel.NAME;
       lastDatapoint.config = JsonNodeFactory.instance.objectNode()
@@ -1184,22 +1200,24 @@ public class AlertingServiceImpl implements AlertingService {
       floatingWindow.model = RelativeDifferenceChangeDetectionModel.NAME;
       floatingWindow.config = JsonNodeFactory.instance.objectNode()
             .put("window", 5).put("filter", "mean").put("threshold", 0.1).put("minPrevious", 5);
-      return Arrays.asList(lastDatapoint, floatingWindow);
+      return Arrays.asList(lastDatapoint, floatingWindow).stream().map(ChangeDetectionMapper::from).collect(Collectors.toList());
    }
 
    @WithRoles
    @Override
-   public List<MissingDataRule> missingDataRules(int testId) {
+   public List<MissingDataRuleDTO> missingDataRules(int testId) {
       if (testId <= 0) {
          throw ServiceException.badRequest("Invalid test ID: " + testId);
       }
-      return MissingDataRule.list("test.id", testId);
+      List<MissingDataRule> rules = MissingDataRule.list("test.id", testId);
+      return rules.stream().map(MissingDataRuleMapper::from).collect(Collectors.toList());
    }
 
    @WithRoles
    @Transactional
    @Override
-   public int updateMissingDataRule(int testId, MissingDataRule rule) {
+   public int updateMissingDataRule(int testId, MissingDataRuleDTO dto) {
+      MissingDataRule rule = MissingDataRuleMapper.to(dto);
       // check test existence and ownership
       testService.getTestForUpdate(testId);
       if (rule.id != null && rule.id <= 0) {
@@ -1307,7 +1325,8 @@ public class AlertingServiceImpl implements AlertingService {
    void onDatasetDeleted(DataSet.Info info) {
       log.debugf("Removing datasets and changes for dataset %d (%d/%d, test %d)", info.id, info.runId, info.ordinal, info.testId);
       for (DataPoint dp : DataPoint.<DataPoint>list("dataset_id", info.id)) {
-         messageBus.publish(DataPoint.EVENT_DELETED, info.testId, new DataPoint.Event(dp, info.testId, false));
+         messageBus.publish(DataPoint.EVENT_DELETED, info.testId,
+                 new DataPoint.Event(dp, info.testId, false));
          dp.delete();
       }
       for (Change c: Change.<Change>list("dataset_id = ?1 AND confirmed = false", info.id)) {

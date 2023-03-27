@@ -19,6 +19,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.transaction.Transactional;
 
+import io.hyperfoil.tools.horreum.entity.*;
+import io.hyperfoil.tools.horreum.entity.json.DataSetDTO;
+import io.hyperfoil.tools.horreum.entity.json.TestDTO;
+import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
+import io.hyperfoil.tools.horreum.mapper.DatasetLogMapper;
+import io.hyperfoil.tools.horreum.mapper.ExperimentProfileMapper;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.Transformers;
@@ -31,11 +37,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 
 import io.hyperfoil.tools.horreum.api.ConditionConfig;
-import io.hyperfoil.tools.horreum.api.ExperimentService;
+import io.hyperfoil.tools.horreum.services.ExperimentService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
-import io.hyperfoil.tools.horreum.entity.ExperimentComparison;
-import io.hyperfoil.tools.horreum.entity.ExperimentProfile;
-import io.hyperfoil.tools.horreum.entity.PersistentLog;
 import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
 import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;
 import io.hyperfoil.tools.horreum.entity.json.DataSet;
@@ -68,20 +71,22 @@ public class ExperimentServiceImpl implements ExperimentService {
    @WithRoles
    @PermitAll
    @Override
-   public Collection<ExperimentProfile> profiles(int testId) {
-      return ExperimentProfile.list("test_id", testId);
+   public Collection<ExperimentProfileDTO> profiles(int testId) {
+      List<ExperimentProfile> profiles = ExperimentProfile.list("test_id", testId);
+      return profiles.stream().map(ExperimentProfileMapper::from).collect(Collectors.toList());
    }
 
    @WithRoles
    @RolesAllowed(Roles.TESTER)
    @Transactional
    @Override
-   public int addOrUpdateProfile(int testId, ExperimentProfile profile) {
-      if (profile.selectorLabels == null || profile.selectorLabels.isEmpty()) {
+   public int addOrUpdateProfile(int testId, ExperimentProfileDTO dto) {
+      if (dto.selectorLabels == null || dto.selectorLabels.isEmpty()) {
          throw ServiceException.badRequest("Experiment profile must have selector labels defined.");
-      } else if (profile.baselineLabels == null || profile.baselineLabels.isEmpty()) {
+      } else if (dto.baselineLabels == null || dto.baselineLabels.isEmpty()) {
          throw ServiceException.badRequest("Experiment profile must have baseline labels defined.");
       }
+      ExperimentProfile profile = ExperimentProfileMapper.to(dto);
       profile.test = em.getReference(Test.class, testId);
       if (profile.id < 0) {
          profile.id = null;
@@ -120,7 +125,9 @@ public class ExperimentServiceImpl implements ExperimentService {
       }
       List<ExperimentService.ExperimentResult> results = new ArrayList<>();
       DataSet.Info info = dataset.getInfo();
-      runExperiments(info, results::add, logs -> results.add(new ExperimentResult(null, logs, info, Collections.emptyList(), Collections.emptyMap(), null, false)), false);
+      runExperiments(info, results::add, logs -> results.add(
+              new ExperimentResult(null, logs.stream().map(DatasetLogMapper::from).collect(Collectors.toList()),
+                      DataSetMapper.fromInfo(info), Collections.emptyList(), Collections.emptyMap(), null, false)), false);
       return results;
    }
 
@@ -236,7 +243,7 @@ public class ExperimentServiceImpl implements ExperimentService {
          List<Integer> variableIds = profile.comparisons.stream().map(ExperimentComparison::getVariableId).collect(Collectors.toList());
          DataPoint.<DataPoint>find("dataset_id IN ?1 AND variable_id IN ?2", Sort.descending("timestamp", "dataset_id"), entry.getValue(), variableIds)
                .stream().forEach(dp -> byVar.computeIfAbsent(dp.variable.id, v -> new ArrayList<>()).add(dp));
-         Map<ExperimentComparison, ComparisonResult> results = new HashMap<>();
+         Map<ExperimentComparisonDTO, ComparisonResult> results = new HashMap<>();
          for (var comparison : profile.comparisons) {
             Hibernate.initialize(comparison.variable);
             ExperimentConditionModel model = MODELS.get(comparison.model);
@@ -254,13 +261,14 @@ public class ExperimentServiceImpl implements ExperimentService {
                addLog(profileLogs, info.testId, info.id, PersistentLog.ERROR, "No datapoint for comparison of variable %s in profile %s", comparison.variable.name, profile.name);
                continue;
             }
-            results.put(comparison, model.compare(comparison.config, baseline, datapoint));
+            results.put(ExperimentProfileMapper.fromExperimentComparison(comparison),
+                    model.compare(comparison.config, baseline, datapoint));
          }
 
          Query datasetQuery = em.createNativeQuery("SELECT id, runid as \"runId\", ordinal, testid as \"testId\" FROM dataset WHERE id IN ?1 ORDER BY start DESC");
-         SqlServiceImpl.setResultTransformer(datasetQuery, Transformers.aliasToBean(DataSet.Info.class));
-         @SuppressWarnings("unchecked") List<DataSet.Info> baseline =
-               (List<DataSet.Info>) datasetQuery.setParameter(1, entry.getValue()).getResultList();
+         SqlServiceImpl.setResultTransformer(datasetQuery, Transformers.aliasToBean(DataSetDTO.Info.class));
+         @SuppressWarnings("unchecked") List<DataSetDTO.Info> baseline =
+               (List<DataSetDTO.Info>) datasetQuery.setParameter(1, entry.getValue()).getResultList();
 
          JsonNode extraLabels = (JsonNode) em.createNativeQuery("SELECT COALESCE(jsonb_object_agg(COALESCE(label.name, ''), lv.value), '{}'::::jsonb) AS value " +
                "FROM experiment_profile ep JOIN label ON json_contains(ep.extra_labels, label.name) " +
@@ -270,28 +278,33 @@ public class ExperimentServiceImpl implements ExperimentService {
                .addScalar("value", JsonNodeBinaryType.INSTANCE)
                .getSingleResult();
          Hibernate.initialize(profile.test.name);
-         resultConsumer.accept(new ExperimentResult(profile, profileLogs, info, baseline, results, extraLabels, notify));
+         resultConsumer.accept(new ExperimentResult(ExperimentProfileMapper.from(profile),
+                 profileLogs.stream().map(DatasetLogMapper::from).collect(Collectors.toList()),
+                 DataSetMapper.fromInfo(info), baseline, results,
+                 extraLabels, notify));
       }
    }
 
    JsonNode exportTest(int testId) {
-      return Util.OBJECT_MAPPER.valueToTree(ExperimentProfile.list("test_id", testId));
+      List<ExperimentProfile> experimentProfiles = ExperimentProfile.list("test_id", testId);
+      return Util.OBJECT_MAPPER.valueToTree(experimentProfiles.stream().map(ExperimentProfileMapper::from).collect(Collectors.toList()));
    }
 
-   void importTest(int testId, JsonNode experiments) {
+   void importTest(int testId, JsonNode experiments, boolean forceUseTestId) {
       if (experiments.isMissingNode() || experiments.isNull()) {
          log.infof("Import test %d: no experiment profiles", testId);
       } else if (experiments.isArray()) {
          for (JsonNode node : experiments) {
             ExperimentProfile profile;
             try {
-               profile = Util.OBJECT_MAPPER.treeToValue(node, ExperimentProfile.class);
+               profile = ExperimentProfileMapper.to(Util.OBJECT_MAPPER.treeToValue(node, ExperimentProfileDTO.class));
             } catch (JsonProcessingException e) {
                throw ServiceException.badRequest("Cannot deserialize experiment profile id '" + node.path("id").asText() + "': " + e.getMessage());
             }
-            if (profile.test == null) {
+            if(forceUseTestId || profile.test == null) {
                profile.test = em.getReference(Test.class, testId);
-            } else if (profile.test.id != testId) {
+            }
+            else if (profile.test.id != testId) {
                throw ServiceException.badRequest("Wrong test id in experiment profile id '" + node.path("id").asText() + "'");
             }
             em.merge(profile);

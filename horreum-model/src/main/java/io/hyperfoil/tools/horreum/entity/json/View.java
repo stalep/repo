@@ -23,7 +23,7 @@ import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.hyperfoil.tools.horreum.entity.ApiIgnore;
+import io.hyperfoil.tools.horreum.ApiIgnore;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**

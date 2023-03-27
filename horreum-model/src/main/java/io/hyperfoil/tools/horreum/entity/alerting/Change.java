@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.hyperfoil.tools.horreum.entity.json.DataSet;
+import io.hyperfoil.tools.horreum.entity.json.DataSetDTO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**
@@ -97,10 +98,10 @@ public class Change extends PanacheEntityBase {
       @Override
       public String toString() {
          return "Change.Event{" +
-               "change=" + change +
-               ", dataset=" + dataset +
-               ", notify=" + notify +
-               '}';
+                 "change=" + change +
+                 ", dataset=" + dataset +
+                 ", notify=" + notify +
+                 '}';
       }
    }
 }

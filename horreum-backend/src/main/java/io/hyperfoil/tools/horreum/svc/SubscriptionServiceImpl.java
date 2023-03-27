@@ -17,18 +17,19 @@ import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
+import io.hyperfoil.tools.horreum.entity.alerting.WatchDTO;
+import io.hyperfoil.tools.horreum.entity.json.TestDTO;
+import io.hyperfoil.tools.horreum.mapper.WatchMapper;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.api.SubscriptionService;
+import io.hyperfoil.tools.horreum.services.SubscriptionService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
-import io.hyperfoil.tools.horreum.entity.ExperimentProfile;
 import io.hyperfoil.tools.horreum.entity.alerting.Watch;
 import io.hyperfoil.tools.horreum.entity.json.Test;
 import io.hyperfoil.tools.horreum.server.WithRoles;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.runtime.Startup;
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -90,7 +91,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
    @RolesAllowed({ Roles.VIEWER, Roles.TESTER, Roles.ADMIN})
    @WithRoles
    @Override
-   public Watch get(int testId) {
+   public WatchDTO get(int testId) {
       Watch watch = Watch.find("test.id = ?1", testId).firstResult();
       if (watch == null) {
          watch = new Watch();
@@ -99,7 +100,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
          watch.users = Collections.emptyList();
          watch.optout = Collections.emptyList();
       }
-      return watch;
+      return WatchMapper.from(watch);
    }
 
    private static List<String> add(List<String> list, String item) {
@@ -204,7 +205,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
    @WithRoles
    @Transactional
    @Override
-   public void update(int testId, Watch watch) {
+   public void update(int testId, WatchDTO dto) {
+      Watch watch = WatchMapper.to(dto);
       Watch existing = Watch.find("testid", testId).firstResult();
       if (existing == null) {
          watch.id = null;
@@ -264,7 +266,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
          log.infof("Import test %d: no subscriptions", testId);
       } else {
          try {
-            Watch watch = Util.OBJECT_MAPPER.treeToValue(subscriptions, Watch.class);
+            Watch watch = WatchMapper.to(Util.OBJECT_MAPPER.treeToValue(subscriptions, WatchDTO.class));
             watch.test = em.getReference(Test.class, testId);
             em.merge(watch);
          } catch (JsonProcessingException e) {

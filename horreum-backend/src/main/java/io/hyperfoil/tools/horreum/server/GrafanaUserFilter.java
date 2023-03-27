@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.horreum.server;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 

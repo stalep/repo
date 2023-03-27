@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.security.PermitAll;
@@ -19,9 +20,11 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
+import io.hyperfoil.tools.horreum.entity.alerting.NotificationSettingsDTO;
+import io.hyperfoil.tools.horreum.mapper.NotificationSettingsMapper;
 import org.jboss.logging.Logger;
 
-import io.hyperfoil.tools.horreum.api.NotificationService;
+import io.hyperfoil.tools.horreum.services.NotificationService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.alerting.NotificationSettings;
 import io.hyperfoil.tools.horreum.entity.json.DataSet;
@@ -132,17 +135,18 @@ public class NotificationServiceImpl implements NotificationService {
    @WithRoles(addUsername = true)
    @RolesAllowed({ Roles.VIEWER, Roles.TESTER, Roles.ADMIN})
    @Override
-   public List<NotificationSettings> settings(String name, boolean team) {
-      return NotificationSettings.list("name = ?1 AND isTeam = ?2", name, team);
+   public List<NotificationSettingsDTO> settings(String name, boolean team) {
+      List<NotificationSettings> notifications = NotificationSettings.list("name = ?1 AND isTeam = ?2", name, team);
+      return notifications.stream().map(NotificationSettingsMapper::from).collect(Collectors.toList());
    }
 
    @WithRoles(addUsername = true)
    @RolesAllowed({ Roles.VIEWER, Roles.TESTER, Roles.ADMIN})
    @Transactional
    @Override
-   public void updateSettings(String name, boolean team, NotificationSettings[] settings) {
+   public void updateSettings(String name, boolean team, NotificationSettingsDTO[] settings) {
       NotificationSettings.delete("name = ?1 AND isTeam = ?2", name, team);
-      for (NotificationSettings s : settings) {
+      for (NotificationSettingsDTO s : settings) {
          if (!plugins.containsKey(s.method)) {
             try {
                tm.setRollbackOnly();

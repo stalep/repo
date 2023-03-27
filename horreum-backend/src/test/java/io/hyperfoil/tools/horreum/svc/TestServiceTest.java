@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import io.hyperfoil.tools.horreum.entity.alerting.*;
+import io.hyperfoil.tools.horreum.entity.json.*;
 import org.hibernate.query.NativeQuery;
 import org.junit.jupiter.api.TestInfo;
 
@@ -23,22 +25,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 
 import io.hyperfoil.tools.horreum.action.ExperimentResultToMarkdown;
-import io.hyperfoil.tools.horreum.api.ExperimentService;
-import io.hyperfoil.tools.horreum.api.TestService;
+import io.hyperfoil.tools.horreum.services.ExperimentService;
+import io.hyperfoil.tools.horreum.services.TestService;
 import io.hyperfoil.tools.horreum.entity.ExperimentProfile;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetection;
-import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRule;
-import io.hyperfoil.tools.horreum.entity.alerting.Variable;
-import io.hyperfoil.tools.horreum.entity.alerting.Watch;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Action;
-import io.hyperfoil.tools.horreum.entity.json.Extractor;
-import io.hyperfoil.tools.horreum.entity.json.Run;
-import io.hyperfoil.tools.horreum.entity.json.Schema;
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.json.Transformer;
-import io.hyperfoil.tools.horreum.entity.json.View;
-import io.hyperfoil.tools.horreum.entity.json.ViewComponent;
 import io.hyperfoil.tools.horreum.server.CloseMe;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
 import io.hyperfoil.tools.horreum.test.PostgresResource;
@@ -57,7 +46,7 @@ public class TestServiceTest extends BaseServiceTest {
    @org.junit.jupiter.api.Test
    public void testCreateDelete(TestInfo info) throws InterruptedException {
 
-      Test test = createTest(createExampleTest(getTestName(info)));
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
       try (CloseMe ignored = roleManager.withRoles(Arrays.asList(TESTER_ROLES))) {
          assertNotNull(Test.findById(test.id));
       }
@@ -82,8 +71,8 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testRecalculate(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
 
       BlockingQueue<DataSet.EventNew> newDatasetQueue = eventConsumerQueue(DataSet.EventNew.class, DataSet.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       final int NUM_DATASETS = 5;
@@ -121,7 +110,7 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testAddTestAction(TestInfo info) {
-      Test test = createTest(createExampleTest(getTestName(info)));
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
       addTestHttpAction(test, Run.EVENT_NEW, "https://attacker.com").then().statusCode(400);
 
       addAllowedSite("https://example.com");
@@ -135,18 +124,18 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testUpdateView(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
 
       BlockingQueue<DataSet.EventNew> newDatasetQueue = eventConsumerQueue(DataSet.EventNew.class, DataSet.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       uploadRun(runWithValue(42, schema), test.name);
       DataSet.EventNew event = newDatasetQueue.poll(10, TimeUnit.SECONDS);
       assertNotNull(event);
 
-      ViewComponent vc = new ViewComponent();
+      ViewComponentDTO vc = new ViewComponentDTO();
       vc.headerName = "Foobar";
       vc.labels = JsonNodeFactory.instance.arrayNode().add("value");
-      View defaultView = test.views.stream().filter(v -> "Default".equals(v.name)).findFirst().orElseThrow();
+      ViewDTO defaultView = test.views.stream().filter(v -> "Default".equals(v.name)).findFirst().orElseThrow();
       defaultView.components.add(vc);
       updateView(test.id, defaultView);
 
@@ -161,7 +150,7 @@ public class TestServiceTest extends BaseServiceTest {
       });
    }
 
-   private void updateView(int testId, View view) {
+   private void updateView(int testId, ViewDTO view) {
       Integer viewId = jsonRequest().body(view).post("/api/test/" + testId + "/view")
             .then().statusCode(200).extract().body().as(Integer.class);
       if (view.id != null) {
@@ -171,8 +160,8 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testLabelValues(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
 
       BlockingQueue<DataSet.LabelsUpdatedEvent> newDatasetQueue = eventConsumerQueue(DataSet.LabelsUpdatedEvent.class, DataSet.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
       uploadRun(runWithValue(42, schema), test.name);
@@ -201,15 +190,15 @@ public class TestServiceTest extends BaseServiceTest {
    }
 
    private void testImportExport(boolean wipe) {
-      Schema schema = createSchema("Example", "urn:example:1.0");
-      Transformer transformer = createTransformer("Foobar", schema, null, new Extractor("foo", "$.foo", false));
+      SchemaDTO schema = createSchema("Example", "urn:example:1.0");
+      TransformerDTO transformer = createTransformer("Foobar", schema, null, new ExtractorDTO("foo", "$.foo", false));
 
-      Test test = createTest(createExampleTest("to-be-exported"));
+      TestDTO test = createTest(createExampleTest("to-be-exported"));
       addToken(test, 5, "some-secret-string");
       addTransformer(test, transformer);
-      View view = new View();
+      ViewDTO view = new ViewDTO();
       view.name = "Another";
-      ViewComponent vc = new ViewComponent();
+      ViewComponentDTO vc = new ViewComponentDTO();
       vc.labels = JsonNodeFactory.instance.arrayNode().add("foo");
       vc.headerName = "Some foo";
       view.components = Collections.singletonList(vc);
@@ -250,12 +239,14 @@ public class TestServiceTest extends BaseServiceTest {
 
       jsonRequest().body(testJson).post("/api/test/import").then().statusCode(204);
 
-      validateDatabaseContents(db);
+      //if we wipe, we actually import a new test and there is no use validating the db
+      if(!wipe)
+         validateDatabaseContents(db);
    }
 
-   private void addSubscription(Test test) {
-      Watch watch = new Watch();
-      watch.test = test;
+   private void addSubscription(TestDTO test) {
+      WatchDTO watch = new WatchDTO();
+      watch.testId = test.id;
       watch.users = Arrays.asList("john", "bill");
       watch.teams = Collections.singletonList("dev-team");
       watch.optout = Collections.singletonList("ignore-me");

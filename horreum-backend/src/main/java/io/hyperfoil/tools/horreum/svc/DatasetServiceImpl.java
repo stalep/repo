@@ -16,6 +16,8 @@ import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 import javax.transaction.Transactional;
 
+import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.AliasToBeanResultTransformer;
@@ -30,15 +32,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 
-import io.hyperfoil.tools.horreum.api.DatasetService;
-import io.hyperfoil.tools.horreum.api.QueryResult;
-import io.hyperfoil.tools.horreum.api.SchemaService;
+import io.hyperfoil.tools.horreum.services.DatasetService;
+import io.hyperfoil.tools.horreum.services.QueryResult;
+import io.hyperfoil.tools.horreum.services.SchemaService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
 import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Label;
-import io.hyperfoil.tools.horreum.entity.json.Test;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.hyperfoil.tools.horreum.server.WithToken;
 import io.quarkus.runtime.Startup;
@@ -313,7 +312,7 @@ public class DatasetServiceImpl implements DatasetService {
 
    @Override
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
-   public LabelPreview previewLabel(int datasetId, Label label) {
+   public LabelPreview previewLabel(int datasetId, LabelDTO label) {
       // This is executed with elevated permissions, but with the same as a normal label calculation would use
       // Therefore we need to explicitly check dataset ownership
       DataSet dataset = DataSet.findById(datasetId);
@@ -334,7 +333,7 @@ public class DatasetServiceImpl implements DatasetService {
          extracted = (JsonNode) em.createNativeQuery(LABEL_PREVIEW).unwrap(NativeQuery.class)
                .setParameter(1, extractors)
                .setParameter(2, datasetId)
-               .setParameter(3, label.schema.id)
+               .setParameter(3, label.schemaId)
                .addScalar("value", JsonNodeBinaryType.INSTANCE).getSingleResult();
       } catch (PersistenceException e) {
          preview.output = Util.explainCauses(e);
@@ -371,12 +370,12 @@ public class DatasetServiceImpl implements DatasetService {
    @WithToken
    @WithRoles
    @Override
-   public DataSet getDataSet(int datasetId) {
+   public DataSetDTO getDataSet(int datasetId) {
       DataSet dataset = DataSet.findById(datasetId);
       if (dataset != null) {
          Hibernate.initialize(dataset.data);
       }
-      return dataset;
+      return DataSetMapper.from(dataset);
    }
 
    private void onLabelChanged(String param) {

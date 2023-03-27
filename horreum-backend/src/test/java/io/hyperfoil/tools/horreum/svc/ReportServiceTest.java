@@ -16,14 +16,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Extractor;
-import io.hyperfoil.tools.horreum.entity.json.Schema;
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.report.ReportComment;
-import io.hyperfoil.tools.horreum.entity.report.ReportComponent;
-import io.hyperfoil.tools.horreum.entity.report.TableReport;
-import io.hyperfoil.tools.horreum.entity.report.TableReportConfig;
+import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.entity.report.*;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
 import io.hyperfoil.tools.horreum.test.PostgresResource;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -40,20 +34,20 @@ public class ReportServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testNoFilter() throws InterruptedException {
-      Test test = createTest(createExampleTest("nofilter"));
+      TestDTO test = createTest(createExampleTest("nofilter"));
       createComparisonSchema();
       uploadExampleRuns(test);
 
-      TableReportConfig config = newExampleTableReportConfig(test);
-      TableReport report = jsonRequest().body(config).post("/api/report/table/config")
-            .then().statusCode(200).extract().body().as(TableReport.class);
+      TableReportConfigDTO config = newExampleTableReportConfig(test);
+      TableReportDTO report = jsonRequest().body(config).post("/api/report/table/config")
+            .then().statusCode(200).extract().body().as(TableReportDTO.class);
 
       assertEquals(8, report.data.size());
       assertCount(report, 4, d -> d.category, "jvm");
       assertCount(report, 4, d -> d.category, "native");
       assertCount(report, 4, d -> d.series, "windows");
       assertCount(report, 4, d -> d.series, "linux");
-      TableReport.Data duplicated = report.data.stream()
+      TableReportDTO.DataDTO duplicated = report.data.stream()
             .filter(d -> "windows".equals(d.series) && "jvm".equals(d.category) && Integer.parseInt(d.scale) == 2)
             .findFirst().orElseThrow();
       assertEquals(0.4, duplicated.values.get(0).asDouble());
@@ -65,35 +59,35 @@ public class ReportServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testFilter() throws InterruptedException {
-      Test test = createTest(createExampleTest("filter"));
+      TestDTO test = createTest(createExampleTest("filter"));
       createComparisonSchema();
       uploadExampleRuns(test);
 
-      TableReportConfig config = newExampleTableReportConfig(test);
+      TableReportConfigDTO config = newExampleTableReportConfig(test);
       config.filterLabels = arrayOf("variant");
       config.filterFunction = "v => v === 'production'";
-      TableReport report = jsonRequest().body(config).post("/api/report/table/config")
-            .then().statusCode(200).extract().body().as(TableReport.class);
+      TableReportDTO report = jsonRequest().body(config).post("/api/report/table/config")
+            .then().statusCode(200).extract().body().as(TableReportDTO.class);
 
       assertEquals(6, report.data.size());
       assertCount(report, 3, d -> d.category, "jvm");
       assertCount(report, 3, d -> d.category, "native");
       assertCount(report, 4, d -> d.series, "windows");
       assertCount(report, 2, d -> d.series, "linux");
-      TableReport.Data duplicated = report.data.stream()
+      TableReportDTO.DataDTO duplicated = report.data.stream()
             .filter(d -> "windows".equals(d.series) && "jvm".equals(d.category) && Integer.parseInt(d.scale) == 2)
             .findFirst().orElseThrow();
       assertEquals(0.8, duplicated.values.get(0).asDouble());
       assertEquals(150_000_000L, duplicated.values.get(1).asLong());
       assertEquals(200, duplicated.values.get(2).asInt());
 
-      ReportComment comment = createComment(2, "native", "Hello world");
-      ReportComment commentWithId = jsonRequest().body(comment).post("/api/report/comment/" + report.id)
-            .then().statusCode(200).extract().body().as(ReportComment.class);
-      TableReport updatedReport = jsonRequest().get("/api/report/table/" + report.id)
-            .then().statusCode(200).extract().body().as(TableReport.class);
+      ReportCommentDTO comment = createComment(2, "native", "Hello world");
+      ReportCommentDTO commentWithId = jsonRequest().body(comment).post("/api/report/comment/" + report.id)
+            .then().statusCode(200).extract().body().as(ReportCommentDTO.class);
+      TableReportDTO updatedReport = jsonRequest().get("/api/report/table/" + report.id)
+            .then().statusCode(200).extract().body().as(TableReportDTO.class);
       assertEquals(1, updatedReport.comments.size());
-      ReportComment readComment = updatedReport.comments.stream().findFirst().orElseThrow();
+      ReportCommentDTO readComment = updatedReport.comments.stream().findFirst().orElseThrow();
       assertEquals(commentWithId.id, readComment.id);
       assertEquals(2, readComment.level);
       assertEquals("native", readComment.category);
@@ -106,7 +100,7 @@ public class ReportServiceTest extends BaseServiceTest {
       jsonRequest().body(comment).post("/api/report/comment/" + report.id); // no comment ID => add
 
       updatedReport = jsonRequest().get("/api/report/table/" + report.id)
-            .then().statusCode(200).extract().body().as(TableReport.class);
+            .then().statusCode(200).extract().body().as(TableReportDTO.class);
       assertEquals(2, updatedReport.comments.size());
       assertEquals(1, updatedReport.comments.stream().filter(c -> "Nazdar".equals(c.comment)).count());
       assertEquals(1, updatedReport.comments.stream().filter(c -> "Ahoj".equals(c.comment)).count());
@@ -114,8 +108,8 @@ public class ReportServiceTest extends BaseServiceTest {
       deleteReport(report);
    }
 
-   private ReportComment createComment(int level, String category, String msg) {
-      ReportComment comment = new ReportComment();
+   private ReportCommentDTO createComment(int level, String category, String msg) {
+      ReportCommentDTO comment = new ReportCommentDTO();
       comment.level = 2;
       comment.category = category;
       comment.componentId = 1;
@@ -123,12 +117,12 @@ public class ReportServiceTest extends BaseServiceTest {
       return comment;
    }
 
-   private void deleteReport(TableReport report) {
+   private void deleteReport(TableReportDTO report) {
       jsonRequest().delete("/api/report/table/" + report.id).then().statusCode(204);
    }
 
-   private TableReportConfig newExampleTableReportConfig(Test test) {
-      TableReportConfig config = new TableReportConfig();
+   private TableReportConfigDTO newExampleTableReportConfig(TestDTO test) {
+      TableReportConfigDTO config = new TableReportConfigDTO();
       config.test = test;
       config.title = "Test no filter";
       config.categoryLabels = arrayOf("category");
@@ -143,7 +137,7 @@ public class ReportServiceTest extends BaseServiceTest {
       return config;
    }
 
-   private void uploadExampleRuns(Test test) throws InterruptedException {
+   private void uploadExampleRuns(TestDTO test) throws InterruptedException {
       BlockingQueue<DataSet.LabelsUpdatedEvent> queue = eventConsumerQueue(DataSet.LabelsUpdatedEvent.class, DataSet.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
 
       long ts = System.currentTimeMillis();
@@ -163,12 +157,12 @@ public class ReportServiceTest extends BaseServiceTest {
       }
    }
 
-   private void assertCount(TableReport report, int expected, Function<TableReport.Data, String> selector, String value) {
+   private void assertCount(TableReportDTO report, int expected, Function<TableReportDTO.DataDTO, String> selector, String value) {
       assertEquals(expected, report.data.stream().map(selector).filter(value::equals).count());
    }
 
-   private ReportComponent newComponent(String function, String... labels) {
-      ReportComponent component = new ReportComponent();
+   private ReportComponentDTO newComponent(String function, String... labels) {
+      ReportComponentDTO component = new ReportComponentDTO();
       component.name = Stream.of(labels).map(l -> Character.toUpperCase(l.charAt(0)) + l.substring(1)).collect(Collectors.joining("+"));
       component.labels = arrayOf(labels);
       component.function = function;
@@ -196,31 +190,31 @@ public class ReportServiceTest extends BaseServiceTest {
    }
 
    private void createComparisonSchema() {
-      Schema schema = createSchema("comparison", SCHEMA);
-      addLabel(schema, "variant", null, new Extractor("variant", "$.variant", false));
-      addLabel(schema, "os", null, new Extractor("os", "$.os", false));
-      addLabel(schema, "category", null, new Extractor("category", "$.category", false));
-      addLabel(schema, "clusterSize", null, new Extractor("clusterSize", "$.clusterSize", false));
-      addLabel(schema, "cpuUsage", null, new Extractor("cpuUsage", "$.cpuUsage", false));
-      addLabel(schema, "memoryUsage", null, new Extractor("memoryUsage", "$.memoryUsage", false));
-      addLabel(schema, "throughput", null, new Extractor("throughput", "$.throughput", false));
+      SchemaDTO schema = createSchema("comparison", SCHEMA);
+      addLabel(schema, "variant", null, new ExtractorDTO("variant", "$.variant", false));
+      addLabel(schema, "os", null, new ExtractorDTO("os", "$.os", false));
+      addLabel(schema, "category", null, new ExtractorDTO("category", "$.category", false));
+      addLabel(schema, "clusterSize", null, new ExtractorDTO("clusterSize", "$.clusterSize", false));
+      addLabel(schema, "cpuUsage", null, new ExtractorDTO("cpuUsage", "$.cpuUsage", false));
+      addLabel(schema, "memoryUsage", null, new ExtractorDTO("memoryUsage", "$.memoryUsage", false));
+      addLabel(schema, "throughput", null, new ExtractorDTO("throughput", "$.throughput", false));
    }
 
    @org.junit.jupiter.api.Test
    public void testMissingValues() throws InterruptedException {
-      Test test = createTest(createExampleTest("missing"));
+      TestDTO test = createTest(createExampleTest("missing"));
       createComparisonSchema();
 
       BlockingQueue<DataSet.LabelsUpdatedEvent> queue = eventConsumerQueue(DataSet.LabelsUpdatedEvent.class, DataSet.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
       int runId = uploadRun(JsonNodeFactory.instance.objectNode(), test.name);
       assertNotNull(queue.poll(10, TimeUnit.SECONDS));
 
-      TableReportConfig config = newExampleTableReportConfig(test);
-      TableReport report = jsonRequest().body(config).post("/api/report/table/config")
-            .then().statusCode(200).extract().body().as(TableReport.class);
+      TableReportConfigDTO config = newExampleTableReportConfig(test);
+      TableReportDTO report = jsonRequest().body(config).post("/api/report/table/config")
+            .then().statusCode(200).extract().body().as(TableReportDTO.class);
 
       assertEquals(1, report.data.size());
-      TableReport.Data data = report.data.iterator().next();
+      TableReportDTO.DataDTO data = report.data.iterator().next();
       assertEquals(runId, data.runId);
       assertEquals("", data.series);
       assertEquals("", data.category);

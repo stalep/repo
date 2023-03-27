@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.hyperfoil.tools.horreum.api.ConditionConfig;
-import io.hyperfoil.tools.horreum.api.ExperimentService;
+import io.hyperfoil.tools.horreum.services.ExperimentService;
 import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
 
 public interface ExperimentConditionModel {

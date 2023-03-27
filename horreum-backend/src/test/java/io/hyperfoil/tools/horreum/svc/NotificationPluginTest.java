@@ -9,6 +9,9 @@ import java.util.function.Consumer;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
+import io.hyperfoil.tools.horreum.entity.alerting.ChangeDTO;
+import io.hyperfoil.tools.horreum.entity.alerting.VariableDTO;
+import io.hyperfoil.tools.horreum.entity.json.DataSetDTO;
 import org.junit.jupiter.api.Test;
 
 import io.hyperfoil.tools.horreum.entity.alerting.Change;

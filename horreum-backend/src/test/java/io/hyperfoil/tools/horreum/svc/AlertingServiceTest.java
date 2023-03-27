@@ -21,6 +21,9 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
+import io.hyperfoil.tools.horreum.entity.alerting.*;
+import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.mapper.LabelMapper;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInfo;
@@ -32,23 +35,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.hyperfoil.tools.horreum.api.AlertingService;
-import io.hyperfoil.tools.horreum.api.TestService;
+import io.hyperfoil.tools.horreum.services.AlertingService;
+import io.hyperfoil.tools.horreum.services.TestService;
 import io.hyperfoil.tools.horreum.changedetection.FixedThresholdModel;
 import io.hyperfoil.tools.horreum.entity.Fingerprint;
-import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;
-import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetection;
-import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRule;
-import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRuleResult;
-import io.hyperfoil.tools.horreum.entity.alerting.RunExpectation;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Extractor;
-import io.hyperfoil.tools.horreum.entity.json.Label;
-import io.hyperfoil.tools.horreum.entity.json.Schema;
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.changedetection.RelativeDifferenceChangeDetectionModel;
 import io.hyperfoil.tools.horreum.server.CloseMe;
 import io.hyperfoil.tools.horreum.server.RoleManager;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
@@ -77,8 +67,9 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testNotifications(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
+      log.error("TestDTO:"+test.toString()+", schema: "+schema.toString());
       setTestVariables(test, "Value", "value");
 
       BlockingQueue<DataPoint.Event> dpe = eventConsumerQueue(DataPoint.Event.class, DataPoint.EVENT_NEW, e -> e.testId == test.id);
@@ -107,8 +98,8 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testLogging(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
       setTestVariables(test, "Value", "value");
 
       // This run won't contain the 'value'
@@ -144,8 +135,8 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testChangeDetection(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
       ChangeDetection cd = addChangeDetectionVariable(test);
 
       BlockingQueue<DataPoint.Event> datapointQueue = eventConsumerQueue(DataPoint.Event.class, DataPoint.EVENT_NEW, e -> e.testId == test.id);
@@ -214,12 +205,12 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testChangeDetectionWithFingerprint(TestInfo info) throws InterruptedException {
-      Test test = createExampleTest(getTestName(info));
+      TestDTO test = createExampleTest(getTestName(info));
       test.fingerprintLabels = jsonArray("config");
       test = createTest(test);
       int testId = test.id;
-      Schema schema = createExampleSchema(info);
-      addLabel(schema, "config", null, new Extractor("config", "$.config", false));
+      SchemaDTO schema = createExampleSchema(info);
+      addLabel(schema, "config", null, new ExtractorDTO("config", "$.config", false));
 
       addChangeDetectionVariable(test);
 
@@ -260,14 +251,14 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testFingerprintLabelsChange(TestInfo info) throws Exception {
-      Test test = createExampleTest(getTestName(info));
+      TestDTO test = createExampleTest(getTestName(info));
       test.fingerprintLabels = jsonArray("foo");
       test = createTest(test);
       int testId = test.id;
       addChangeDetectionVariable(test);
-      Schema schema = createExampleSchema(info);
-      addLabel(schema, "foo", null, new Extractor("foo", "$.foo", false));
-      addLabel(schema, "bar", null, new Extractor("bar", "$.bar", false));
+      SchemaDTO schema = createExampleSchema(info);
+      addLabel(schema, "foo", null, new ExtractorDTO("foo", "$.foo", false));
+      addLabel(schema, "bar", null, new ExtractorDTO("bar", "$.bar", false));
 
       uploadRun(runWithValue(42, schema).put("foo", "aaa").put("bar", "bbb"), test.name);
       BlockingQueue<DataPoint.Event> datapointQueue = eventConsumerQueue(DataPoint.Event.class, DataPoint.EVENT_NEW, e -> e.testId == testId);
@@ -293,15 +284,15 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @Disabled
    public void testFingerprintFilter(TestInfo info) throws Exception {
-      Test test = createExampleTest(getTestName(info));
+      TestDTO test = createExampleTest(getTestName(info));
       test.fingerprintLabels = jsonArray("foo");
       test.fingerprintFilter = "value => value === 'aaa'";
       test = createTest(test);
       int testId = test.id;
       addChangeDetectionVariable(test);
-      Schema schema = createExampleSchema(info);
-      addLabel(schema, "foo", null, new Extractor("foo", "$.foo", false));
-      addLabel(schema, "bar", null, new Extractor("bar", "$.bar", false));
+      SchemaDTO schema = createExampleSchema(info);
+      addLabel(schema, "foo", null, new ExtractorDTO("foo", "$.foo", false));
+      addLabel(schema, "bar", null, new ExtractorDTO("bar", "$.bar", false));
 
       BlockingQueue<DataPoint.Event> datapointQueue = eventConsumerQueue(DataPoint.Event.class, DataPoint.EVENT_NEW, e -> e.testId == testId);
 
@@ -360,8 +351,8 @@ public class AlertingServiceTest extends BaseServiceTest {
       }).when(notificationService).notifyMissingDataset(Mockito.anyInt(), Mockito.anyString(), Mockito.anyLong(), Mockito.any(Instant.class));
       QuarkusMock.installMockForType(notificationService, NotificationServiceImpl.class);
 
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
       int firstRuleId = addMissingDataRule(test, "my rule", jsonArray("value"), "value => value > 2", 10000);
       assertTrue(firstRuleId > 0);
 
@@ -504,7 +495,7 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testExpectRunTimeout() {
-      Test test = createTest(createExampleTest("timeout"));
+      TestDTO test = createTest(createExampleTest("timeout"));
       AtomicLong current = mockInstantNow();
       List<String> notifications = mockNotifyExpectedRun();
 
@@ -523,7 +514,7 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testExpectRunUploaded() {
-      Test test = createTest(createExampleTest("uploaded"));
+      TestDTO test = createTest(createExampleTest("uploaded"));
       AtomicLong current = mockInstantNow();
       List<String> notifications = mockNotifyExpectedRun();
 
@@ -546,8 +537,8 @@ public class AlertingServiceTest extends BaseServiceTest {
    public void testRecalculateDatasets(TestInfo info) throws InterruptedException {
       assertEquals(0, DataPoint.count());
 
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
       addChangeDetectionVariable(test);
 
       BlockingQueue<DataPoint.Event> datapointQueue = eventConsumerQueue(DataPoint.Event.class, DataPoint.EVENT_NEW, e -> e.testId == test.id);
@@ -597,8 +588,8 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testFixedThresholds(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
       ChangeDetection rd = new ChangeDetection();
       rd.model = FixedThresholdModel.NAME;
       ObjectNode config = JsonNodeFactory.instance.objectNode();
@@ -633,9 +624,9 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testCustomTimeline(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
-      addLabel(schema, "timestamp", null, new Extractor("ts", "$.timestamp", false));
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
+      addLabel(schema, "timestamp", null, new ExtractorDTO("ts", "$.timestamp", false));
       addChangeDetectionVariable(test);
       setChangeDetectionTimeline(test, Collections.singletonList("timestamp"), null);
 
@@ -674,7 +665,7 @@ public class AlertingServiceTest extends BaseServiceTest {
       assertEquals(Instant.ofEpochSecond(1662023778), dp33.dataPoint.timestamp);
    }
 
-   private void setChangeDetectionTimeline(Test test, List<String> labels, String function) {
+   private void setChangeDetectionTimeline(TestDTO test, List<String> labels, String function) {
       ObjectNode update = JsonNodeFactory.instance.objectNode();
       update.putArray("timelineLabels").addAll(labels.stream().map(JsonNodeFactory.instance::textNode).collect(Collectors.toList()));
       update.put("timelineFunction", function);
@@ -683,10 +674,11 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testLabelsChange(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
       addChangeDetectionVariable(test);
-      Label label = Label.find("name", "value").firstResult();
+      Label l = Label.find("name", "value").firstResult();
+      LabelDTO label = LabelMapper.from(l);
 
       BlockingQueue<DataPoint.Event> datapointQueue = eventConsumerQueue(DataPoint.Event.class, DataPoint.EVENT_NEW, e -> e.testId == test.id);
 
@@ -696,7 +688,7 @@ public class AlertingServiceTest extends BaseServiceTest {
       assertNotNull(dpe1);
 
       // The datapoint will have to be recalculated due to label function update
-      updateLabel(schema, label.id, label.name, "val => val", label.extractors.toArray(Extractor[]::new));
+      updateLabel(schema, label.id, label.name, "val => val", label.extractors.toArray(ExtractorDTO[]::new));
       DataPoint.Event dpe2 = datapointQueue.poll(10, TimeUnit.SECONDS);
       assertNotNull(dpe2);
 
@@ -707,10 +699,10 @@ public class AlertingServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testRandomOrder(TestInfo info) throws InterruptedException {
-      Test test = createTest(createExampleTest(getTestName(info)));
-      Schema schema = createExampleSchema(info);
+      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      SchemaDTO schema = createExampleSchema(info);
       addChangeDetectionVariable(test, 0.1, 1);
-      addLabel(schema, "timestamp", null, new Extractor("ts", "$.timestamp", false));
+      addLabel(schema, "timestamp", null, new ExtractorDTO("ts", "$.timestamp", false));
       setChangeDetectionTimeline(test, Collections.singletonList("timestamp"), null);
 
       BlockingQueue<DataPoint.Event> datapointQueue = eventConsumerQueue(DataPoint.Event.class, DataPoint.EVENT_NEW, e -> e.testId == test.id);
@@ -743,7 +735,7 @@ public class AlertingServiceTest extends BaseServiceTest {
       checkChanges(test);
    }
 
-   private void checkChanges(Test test) {
+   private void checkChanges(TestDTO test) {
       List<Change> list = Change.list("variable.testId", test.id);
       assertEquals(Arrays.asList(1L, 4L, 6L, 7L, 9L),
             list.stream().map(c -> c.timestamp.toEpochMilli()).sorted().collect(Collectors.toList()));

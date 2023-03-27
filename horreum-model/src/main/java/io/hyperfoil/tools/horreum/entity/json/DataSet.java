@@ -2,9 +2,7 @@ package io.hyperfoil.tools.horreum.entity.json;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import javax.persistence.Basic;
@@ -30,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 
-import io.hyperfoil.tools.horreum.entity.ApiIgnore;
+import io.hyperfoil.tools.horreum.ApiIgnore;
 import io.hyperfoil.tools.horreum.entity.ValidationError;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.common.constraint.NotNull;
@@ -114,8 +112,8 @@ public class DataSet extends OwnedEntityBase {
    }
 
    @JsonIgnore
-   public Info getInfo() {
-      return new Info(id, run.id, ordinal, testid);
+   public DataSet.Info getInfo() {
+      return new DataSet.Info(id, run.id, ordinal, testid);
    }
 
    public static class EventNew {
@@ -132,9 +130,9 @@ public class DataSet extends OwnedEntityBase {
       @Override
       public String toString() {
          return "DataSet.EventNew{" +
-               "dataset=" + dataset.id + " (" + dataset.run.id + "/" + dataset.ordinal +
-               "), isRecalculation=" + isRecalculation +
-               '}';
+                 "dataset=" + dataset.id + " (" + dataset.run.id + "/" + dataset.ordinal +
+                 "), isRecalculation=" + isRecalculation +
+                 '}';
       }
    }
 
@@ -167,16 +165,10 @@ public class DataSet extends OwnedEntityBase {
       this.description = description;
       this.data = data;
    }
-
-   @Schema(name = "DatasetInfo")
    public static class Info {
-      @JsonProperty(required = true)
       public int id;
-      @JsonProperty(required = true)
       public int runId;
-      @JsonProperty(required = true)
       public int ordinal;
-      @JsonProperty(required = true)
       public int testId;
 
       public Info() {
@@ -205,11 +197,12 @@ public class DataSet extends OwnedEntityBase {
       @Override
       public String toString() {
          return "DatasetInfo{" +
-               "id=" + id +
-               ", runId=" + runId +
-               ", ordinal=" + ordinal +
-               ", testId=" + testId +
-               '}';
+                 "id=" + id +
+                 ", runId=" + runId +
+                 ", ordinal=" + ordinal +
+                 ", testId=" + testId +
+                 '}';
       }
    }
+
 }

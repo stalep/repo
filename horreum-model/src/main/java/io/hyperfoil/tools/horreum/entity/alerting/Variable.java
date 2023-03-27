@@ -89,4 +89,11 @@ public class Variable extends PanacheEntityBase {
          cd.variable = this;
       });
    }
+
+   public void flushIds() {
+      id = null;
+      changeDetection.forEach(cd -> {
+         cd.id = null;
+      });
+   }
 }

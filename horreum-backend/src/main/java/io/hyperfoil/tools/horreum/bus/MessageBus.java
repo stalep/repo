@@ -20,6 +20,10 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
+import io.hyperfoil.tools.horreum.entity.json.Run;
+import io.hyperfoil.tools.horreum.entity.json.Test;
+import io.hyperfoil.tools.horreum.mapper.RunMapper;
+import io.hyperfoil.tools.horreum.mapper.TestMapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.ScrollableResults;
 import org.hibernate.query.NativeQuery;
@@ -150,6 +154,7 @@ public class MessageBus {
          }
          executeForTest(msg.testId, () -> {
             try {
+               //handler.handle(payloadClass.cast(msg.payload));
                handler.handle(payloadClass.cast(msg.payload));
                Util.withTx(tm, () -> {
                   try {
@@ -184,6 +189,15 @@ public class MessageBus {
          consumer.unregister();
          log.debugf("Unregistered index %d on channel %s, new flags: %d", index, channel, Integer.valueOf(newFlags));
       };
+   }
+
+   private Object mapToDTO(Object entity) {
+      if (entity instanceof Run)
+         return RunMapper.from((Run) entity);
+      else if (entity instanceof Test)
+         return TestMapper.from((Test) entity);
+      // lets just return for now
+      return entity;
    }
 
    private int registerIndex(String channel, String component) {

@@ -1,7 +1,11 @@
 package io.hyperfoil.tools.horreum.svc;
 
 import io.hyperfoil.tools.horreum.api.SortDirection;
-import io.hyperfoil.tools.horreum.api.TestService;
+import io.hyperfoil.tools.horreum.mapper.ActionMapper;
+import io.hyperfoil.tools.horreum.mapper.TestMapper;
+import io.hyperfoil.tools.horreum.mapper.TestTokenMapper;
+import io.hyperfoil.tools.horreum.mapper.ViewMapper;
+import io.hyperfoil.tools.horreum.services.TestService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.json.*;
 import io.hyperfoil.tools.horreum.server.EncryptionManager;
@@ -31,10 +35,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.hibernate.Hibernate;
 import org.hibernate.ScrollMode;
@@ -116,17 +120,17 @@ public class TestServiceImpl implements TestService {
    @WithToken
    @WithRoles
    @PermitAll
-   public Test get(int id, String token){
+   public TestDTO get(int id, String token){
       Test test = Test.find("id", id).firstResult();
       if (test == null) {
          throw ServiceException.notFound("No test with id " + id);
       }
       Hibernate.initialize(test.tokens);
-      return test;
+      return TestMapper.from(test);
    }
 
    @Override
-   public Test getByNameOrId(String input){
+   public TestDTO getByNameOrId(String input){
       Test test;
       if (input.matches("-?\\d+")) {
          int id = Integer.parseInt(input);
@@ -137,7 +141,7 @@ public class TestServiceImpl implements TestService {
       if (test == null) {
          throw ServiceException.notFound("No test with name " + input);
       }
-      return test;
+      return TestMapper.from(test);
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
@@ -172,13 +176,14 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed(Roles.TESTER)
    @WithRoles
    @Transactional
-   public Test add(Test test){
-      if (!identity.hasRole(test.owner)) {
-         throw ServiceException.forbidden("This user does not have the " + test.owner + " role!");
+   public TestDTO add(TestDTO dto){
+      if (!identity.hasRole(dto.owner)) {
+         throw ServiceException.forbidden("This user does not have the " + dto.owner + " role!");
       }
+      Test test = TestMapper.to(dto);
       addAuthenticated(test);
       Hibernate.initialize(test.tokens);
-      return test;
+      return TestMapper.from(test);
    }
 
    void addAuthenticated(Test test) {
@@ -228,7 +233,7 @@ public class TestServiceImpl implements TestService {
    @Override
    @PermitAll
    @WithRoles
-   public List<Test> list(String roles, Integer limit, Integer page, String sort, SortDirection direction){
+   public List<TestDTO> list(String roles, Integer limit, Integer page, String sort, SortDirection direction){
       PanacheQuery<Test> query;
       Set<String> actualRoles = null;
       if (Roles.hasRolesParam(roles)) {
@@ -251,7 +256,7 @@ public class TestServiceImpl implements TestService {
       if (limit != null && page != null) {
          query.page(Page.of(page, limit));
       }
-      return query.list();
+      return query.list().stream().map(TestMapper::from).collect(Collectors.toList());
    }
 
    @Override
@@ -338,11 +343,12 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed("tester")
    @WithRoles
    @Transactional
-   public int addToken(int testId, TestToken token) {
-      if (token.hasUpload() && !token.hasRead()) {
+   public int addToken(int testId, TestTokenDTO dto) {
+      if (dto.hasUpload() && !dto.hasRead()) {
          throw ServiceException.badRequest("Upload permission requires read permission as well.");
       }
       Test test = getTestForUpdate(testId);
+      TestToken token = TestTokenMapper.to(dto);
       token.id = null; // this is always a new token, ignore -1 in the request
       token.test = test;
       test.tokens.add(token);
@@ -353,10 +359,10 @@ public class TestServiceImpl implements TestService {
    @Override
    @RolesAllowed("tester")
    @WithRoles
-   public Collection<TestToken> tokens(int testId) {
+   public Collection<TestTokenDTO> tokens(int testId) {
       Test t = Test.findById(testId);
       Hibernate.initialize(t.tokens);
-      return t.tokens;
+      return t.tokens.stream().map(TestTokenMapper::from).collect(Collectors.toList());
    }
 
    @Override
@@ -390,11 +396,12 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed("tester")
    @WithRoles
    @Transactional
-   public int updateView(int testId, View view) {
+   public int updateView(int testId, ViewDTO dto) {
       if (testId <= 0) {
          throw ServiceException.badRequest("Missing test id");
       }
       Test test = getTestForUpdate(testId);
+      View view = ViewMapper.to(dto);
       view.ensureLinked();
       view.test = test;
       if (view.id == null || view.id < 0) {
@@ -460,15 +467,16 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed("tester")
    @WithRoles
    @Transactional
-   public Action updateAction(int testId, Action action) {
+   public ActionDTO updateAction(int testId, ActionDTO dto) {
       if (testId <= 0) {
          throw ServiceException.badRequest("Missing test id");
       }
       // just ensure the test exists
       getTestForUpdate(testId);
-      action.testId = testId;
+      dto.testId = testId;
+      actionService.validate(dto);
 
-      actionService.validate(action);
+      Action action = ActionMapper.to(dto);
       if (action.id == null) {
          action.persist();
       } else {
@@ -480,7 +488,7 @@ public class TestServiceImpl implements TestService {
          }
       }
       em.flush();
-      return action;
+      return ActionMapper.from(action);
    }
 
    @WithRoles
@@ -594,7 +602,7 @@ public class TestServiceImpl implements TestService {
       if (test == null) {
          throw ServiceException.notFound("Test " + testId + " was not found");
       }
-      ObjectNode export = Util.OBJECT_MAPPER.valueToTree(test);
+      ObjectNode export = Util.OBJECT_MAPPER.valueToTree(TestMapper.from(test));
       // do not export full transformers, just references - these belong to the schema
       if (!export.path("transformers").isEmpty()) {
          ArrayNode transformers = JsonNodeFactory.instance.arrayNode();
@@ -604,6 +612,7 @@ public class TestServiceImpl implements TestService {
             // only for informative purposes
             ref.set("name", t.path("name"));
             ref.set("schemaName", t.path("schemaName"));
+            ref.set("schemaId", t.path("schemaId"));
             transformers.add(ref);
          });
          export.set("transformers", transformers);
@@ -651,12 +660,15 @@ public class TestServiceImpl implements TestService {
       JsonNode actions = config.remove("actions");
       JsonNode experiments = config.remove("experiments");
       JsonNode subscriptions = config.remove("subscriptions");
-      Test test;
+      //Test test;
+      TestDTO dto;
+      boolean forceUseTestId = false;
       try {
-         test = Util.OBJECT_MAPPER.treeToValue(config, Test.class);
-         test.ensureLinked();
-         if (test.tokens != null && !test.tokens.isEmpty()) {
-            test.tokens.forEach(token -> token.decryptValue(ciphertext -> {
+         dto = Util.OBJECT_MAPPER.treeToValue(config, TestDTO.class);
+         //test = TestMapper.to( dto);
+         //test.ensureLinked();
+         if (dto.tokens != null && !dto.tokens.isEmpty()) {
+            dto.tokens.forEach(token -> token.decryptValue(ciphertext -> {
                try {
                   return encryptionManager.decrypt(ciphertext);
                } catch (GeneralSecurityException e) {
@@ -664,19 +676,29 @@ public class TestServiceImpl implements TestService {
                }
             }));
          }
-         if (test.transformers != null) {
-            test.transformers.stream().filter(t -> t.id == null || t.id <= 0).findFirst().ifPresent(transformer -> {
+         if (dto.transformers != null) {
+            dto.transformers.stream().filter(t -> t.id == null || t.id <= 0).findFirst().ifPresent(transformer -> {
                throw ServiceException.badRequest("Transformer " + transformer.name + " does not have ID set; Transformers must be imported via Schema.");
             });
          }
-         test = em.merge(test);
+         Test existingTest = Test.findById(dto.id);
+         if(existingTest != null) {
+            Test test = em.merge(TestMapper.to(dto));
+            test.persistAndFlush();
+            dto = TestMapper.from(test);
+         }
+         else {
+            forceUseTestId = true;
+            dto.clearIds();
+            dto = add(dto);
+         }
       } catch (JsonProcessingException e) {
          throw ServiceException.badRequest("Failed to deserialize test: " + e.getMessage());
       }
-      alertingService.importTest(test.id, alerting);
-      actionService.importTest(test.id, actions);
-      experimentService.importTest(test.id, experiments);
-      subscriptionService.importSubscriptions(test.id, subscriptions);
+      alertingService.importTest(dto.id, alerting, forceUseTestId);
+      actionService.importTest(dto.id, actions, forceUseTestId);
+      experimentService.importTest(dto.id, experiments, forceUseTestId);
+      subscriptionService.importSubscriptions(dto.id, subscriptions);
    }
 
    Test getTestForUpdate(int testId) {

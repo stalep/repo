@@ -1,20 +1,20 @@
 package io.hyperfoil.tools.horreum.svc;
 
-import io.hyperfoil.tools.horreum.api.ExperimentService;
-import io.hyperfoil.tools.horreum.api.ActionService;
+import io.hyperfoil.tools.horreum.entity.alerting.Change;
+import io.hyperfoil.tools.horreum.entity.alerting.ChangeDTO;
+import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.mapper.ActionMapper;
+import io.hyperfoil.tools.horreum.mapper.AllowedSiteMapper;
+import io.hyperfoil.tools.horreum.services.ExperimentService;
+import io.hyperfoil.tools.horreum.services.ActionService;
 import io.hyperfoil.tools.horreum.api.SortDirection;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.ActionLog;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
-import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.json.AllowedSite;
-import io.hyperfoil.tools.horreum.entity.json.Action;
-import io.hyperfoil.tools.horreum.entity.json.Run;
-import io.hyperfoil.tools.horreum.entity.json.Test;
 import io.hyperfoil.tools.horreum.action.ActionPlugin;
 import io.hyperfoil.tools.horreum.server.EncryptionManager;
 import io.hyperfoil.tools.horreum.server.WithRoles;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
@@ -73,7 +73,7 @@ public class ActionServiceImpl implements ActionService {
       messageBus.subscribe(Test.EVENT_NEW, "ActionService", Test.class, this::onNewTest);
       messageBus.subscribe(Test.EVENT_DELETED, "ActionService", Test.class, this::onTestDelete);
       messageBus.subscribe(Run.EVENT_NEW, "ActionService", Run.class, this::onNewRun);
-      messageBus.subscribe(Change.EVENT_NEW, "ActionService", Change.Event.class, this::onNewChange);
+      messageBus.subscribe(ChangeDTO.EVENT_NEW, "ActionService", Change.Event.class, this::onNewChange);
       messageBus.subscribe(ExperimentService.ExperimentResult.NEW_RESULT, "ActionService", ExperimentService.ExperimentResult.class, this::onNewExperimentResult);
    }
 
@@ -153,7 +153,7 @@ public class ActionServiceImpl implements ActionService {
       executeActions(Change.EVENT_NEW, testId, changeEvent, changeEvent.notify);
    }
 
-   void validate(Action action) {
+   void validate(ActionDTO action) {
       ActionPlugin plugin = plugins.get(action.type);
       if (plugin == null) {
          throw ServiceException.badRequest("Unknown hook type " + action.type);
@@ -165,7 +165,7 @@ public class ActionServiceImpl implements ActionService {
    @WithRoles
    @Transactional
    @Override
-   public Action add(Action action){
+   public ActionDTO add(ActionDTO action){
       if (action == null){
          throw ServiceException.badRequest("Send action as request body.");
       }
@@ -179,9 +179,12 @@ public class ActionServiceImpl implements ActionService {
       action.secrets = ensureNotNull(action.secrets);
       validate(action);
       if (action.id == null) {
-         action.persist();
+         Action actionEntity = ActionMapper.to(action);
+         actionEntity.persist();
+         action.id = actionEntity.id;
       } else {
-         merge(action);
+         Action actionEntity = ActionMapper.to(action);
+         merge(actionEntity);
       }
       em.flush();
       return action;
@@ -207,8 +210,9 @@ public class ActionServiceImpl implements ActionService {
    @RolesAllowed(Roles.ADMIN)
    @WithRoles
    @Override
-   public Action get(int id){
-      return Action.find("id", id).firstResult();
+   public ActionDTO get(int id){
+      Action action =  Action.find("id", id).firstResult();
+      return ActionMapper.from(action);
    }
 
 
@@ -231,39 +235,41 @@ public class ActionServiceImpl implements ActionService {
    @RolesAllowed(Roles.ADMIN)
    @WithRoles
    @Override
-   public List<Action> list(Integer limit, Integer page, String sort, SortDirection direction){
+   public List<ActionDTO> list(Integer limit, Integer page, String sort, SortDirection direction){
       Sort.Direction sortDirection = direction == null ? null : Sort.Direction.valueOf(direction.name());
       PanacheQuery<Action> query = Action.find("test_id < 0", Sort.by(sort).direction(sortDirection));
       if (limit != null && page != null) {
          query = query.page(Page.of(page, limit));
       }
-      return query.list();
+      return query.list().stream().map(ActionMapper::from).collect(Collectors.toList());
    }
 
 
    @RolesAllowed({ Roles.ADMIN, Roles.TESTER})
    @WithRoles
    @Override
-   public List<Action> getTestActions(int testId) {
-      return Action.list("testId", testId);
+   public List<ActionDTO> getTestActions(int testId) {
+      List<Action> testActions = Action.list("testId", testId);
+      return testActions.stream().map(ActionMapper::from).collect(Collectors.toList());
    }
 
    @PermitAll
    @Override
-   public List<AllowedSite> allowedSites() {
-      return AllowedSite.listAll();
+   public List<AllowedSiteDTO> allowedSites() {
+      List<AllowedSite> sites = AllowedSite.listAll();
+      return  sites.stream().map(AllowedSiteMapper::from).collect(Collectors.toList());
    }
 
    @RolesAllowed(Roles.ADMIN)
    @WithRoles
    @Transactional
    @Override
-   public AllowedSite addSite(String prefix) {
+   public AllowedSiteDTO addSite(String prefix) {
       AllowedSite p = new AllowedSite();
       // FIXME: fetchival stringifies the body into JSON string :-/
       p.prefix = Util.destringify(prefix);
       em.persist(p);
-      return p;
+      return AllowedSiteMapper.from(p);
    }
 
    @RolesAllowed(Roles.ADMIN)
@@ -277,13 +283,13 @@ public class ActionServiceImpl implements ActionService {
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
    public void onNewExperimentResult(ExperimentService.ExperimentResult result) {
-      executeActions(ExperimentService.ExperimentResult.NEW_RESULT, result.profile.test.id, result, result.notify);
+      executeActions(ExperimentService.ExperimentResult.NEW_RESULT, result.profile.testId, result, result.notify);
    }
 
    JsonNode exportTest(int testId) {
       ArrayNode actions = JsonNodeFactory.instance.arrayNode();
       for (Action action : Action.<Action>list("test_id", testId)) {
-         ObjectNode node = Util.OBJECT_MAPPER.valueToTree(action);
+         ObjectNode node = Util.OBJECT_MAPPER.valueToTree(ActionMapper.from(action));
          if (!action.secrets.isEmpty()) {
             try {
                node.put("secrets", encryptionManager.encrypt(action.secrets.toString()));
@@ -296,7 +302,7 @@ public class ActionServiceImpl implements ActionService {
       return actions;
    }
 
-   void importTest(int testId, JsonNode actions) {
+   void importTest(int testId, JsonNode actions, boolean forceUseTestId) {
       if (actions.isMissingNode() || actions.isNull()) {
          log.debugf("Import test %d: no actions");
       } else if (actions.isArray()) {
@@ -307,11 +313,15 @@ public class ActionServiceImpl implements ActionService {
             }
             String secretsEncrypted = ((ObjectNode) node).remove("secrets").textValue();
             try {
-               Action action = Util.OBJECT_MAPPER.treeToValue(node, Action.class);
-               if (action.testId == null) {
+               Action action = ActionMapper.to(Util.OBJECT_MAPPER.treeToValue(node, ActionDTO.class));
+               if(forceUseTestId)
                   action.testId = testId;
-               } else if (action.testId != testId) {
-                  throw ServiceException.badRequest("Action id '" + node.path("id") + "' belongs to a different test: " + action.testId);
+               else {
+                  if (action.testId == null) {
+                     action.testId = testId;
+                  } else if (action.testId != testId) {
+                     throw ServiceException.badRequest("Action id '" + node.path("id") + "' belongs to a different test: " + action.testId);
+                  }
                }
                if (secretsEncrypted != null) {
                   action.secrets = Util.OBJECT_MAPPER.readTree(encryptionManager.decrypt(secretsEncrypted));

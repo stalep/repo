@@ -64,7 +64,21 @@ public class Action extends PanacheEntityBase {
    @Column(name = "run_always")
    public boolean runAlways;
 
-   @JsonProperty("secrets")
+   public Action() {
+   }
+    public Action(Integer id, String event, String type, JsonNode config, JsonNode secrets,
+                  Integer testId, boolean active, boolean runAlways) {
+       this.id = id;
+       this.event = event;
+       this.type = type;
+       this.config = config;
+       this.secrets = secrets;
+       this.testId = testId;
+       this.active = active;
+       this.runAlways = runAlways;
+    }
+
+    @JsonProperty("secrets")
    public void setSecrets(JsonNode secrets) {
       this.secrets = secrets;
    }
