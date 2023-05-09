@@ -28,8 +28,6 @@
     <version>0.8-SNAPSHOT</version>
     <modules>
         <module>horreum-api</module>
-        <module>horreum-model</module>
-        <module>horreum-mapper</module>
         <module>horreum-backend</module>
         <module>horreum-client</module>
         <module>horreum-integration</module>
@@ -137,16 +135,6 @@
             <dependency>
                 <groupId>io.hyperfoil.tools</groupId>
                 <artifactId>horreum-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.hyperfoil.tools</groupId>
-                <artifactId>horreum-model</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.hyperfoil.tools</groupId>
-                <artifactId>horreum-mapper</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

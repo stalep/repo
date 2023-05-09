@@ -73,7 +73,7 @@ public class Label extends OwnedEntityBase {
 
    @JsonProperty("schemaId")
    public void setSchema(int schemaId) {
-      schema = Schema.getEntityManager().getReference(Schema.class, schemaId);
+      schema = getEntityManager().getReference(Schema.class, schemaId);
    }
 
    @Entity

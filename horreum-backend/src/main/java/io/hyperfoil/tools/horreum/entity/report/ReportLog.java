@@ -35,6 +35,6 @@ public class ReportLog extends PersistentLog {
 
    @JsonProperty("reportId")
    public void setReportId(int reportId) {
-      report = TableReport.getEntityManager().getReference(TableReport.class, reportId);
+      report = getEntityManager().getReference(TableReport.class, reportId);
    }
 }

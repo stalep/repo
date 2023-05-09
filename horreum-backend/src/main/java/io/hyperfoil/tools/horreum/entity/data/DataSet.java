@@ -92,14 +92,14 @@ public class DataSet extends OwnedEntityBase {
 
    @JsonProperty("runId")
    public void setRunId(int runId) {
-      run = io.hyperfoil.tools.horreum.entity.data.Run.getEntityManager().getReference(io.hyperfoil.tools.horreum.entity.data.Run.class, runId);
+      run = getEntityManager().getReference(io.hyperfoil.tools.horreum.entity.data.Run.class, runId);
    }
 
    @JsonIgnore
    @ApiIgnore
    public String getFingerprint() {
       @SuppressWarnings("unchecked")
-      List<JsonNode> fingerprintList = DataSet.getEntityManager()
+      List<JsonNode> fingerprintList = getEntityManager()
             .createNativeQuery("SELECT fingerprint FROM fingerprint WHERE dataset_id = ?")
             .setParameter(1, id).unwrap(NativeQuery.class)
             .addScalar("fingerprint", JsonNodeBinaryType.INSTANCE)
