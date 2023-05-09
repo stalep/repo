@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.NotificationSettings;
-import io.hyperfoil.tools.horreum.entity.alerting.NotificationSettingsDTO;
+import io.hyperfoil.tools.horreum.api.alerting.NotificationSettingsDTO;
 
 public class NotificationSettingsMapper {
     public static NotificationSettingsDTO from(NotificationSettings ns) {

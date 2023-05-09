@@ -5,10 +5,9 @@ import static io.restassured.RestAssured.given;
 
 import javax.ws.rs.core.HttpHeaders;
 
-import io.hyperfoil.tools.horreum.entity.json.Access;
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.json.TestDTO;
-import io.hyperfoil.tools.horreum.entity.json.TestToken;
+import io.hyperfoil.tools.horreum.api.data.Access;
+import io.hyperfoil.tools.horreum.api.data.TestDTO;
+import io.hyperfoil.tools.horreum.entity.data.TestToken;
 import io.hyperfoil.tools.horreum.server.TokenInterceptor;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
 import io.hyperfoil.tools.horreum.test.PostgresResource;

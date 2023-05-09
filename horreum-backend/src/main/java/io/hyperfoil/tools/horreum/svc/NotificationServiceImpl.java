@@ -20,15 +20,15 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.entity.alerting.NotificationSettingsDTO;
+import io.hyperfoil.tools.horreum.api.alerting.NotificationSettingsDTO;
 import io.hyperfoil.tools.horreum.mapper.NotificationSettingsMapper;
 import org.jboss.logging.Logger;
 
 import io.hyperfoil.tools.horreum.services.NotificationService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.alerting.NotificationSettings;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.Test;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.Test;
 import io.hyperfoil.tools.horreum.events.DatasetChanges;
 import io.hyperfoil.tools.horreum.notification.Notification;
 import io.hyperfoil.tools.horreum.notification.NotificationPlugin;

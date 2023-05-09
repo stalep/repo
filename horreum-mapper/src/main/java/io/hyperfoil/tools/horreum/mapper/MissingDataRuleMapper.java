@@ -1,8 +1,8 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRule;
-import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRuleDTO;
-import io.hyperfoil.tools.horreum.entity.json.Test;
+import io.hyperfoil.tools.horreum.api.alerting.MissingDataRuleDTO;
+import io.hyperfoil.tools.horreum.entity.data.Test;
 
 public class MissingDataRuleMapper {
     public static MissingDataRuleDTO from(MissingDataRule rule) {

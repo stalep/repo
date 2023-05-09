@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.api.data.*;
 import io.hyperfoil.tools.horreum.it.profile.InContainerProfile;
 import io.hyperfoil.tools.horreum.services.DatasetService;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -116,7 +116,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
 
     public static HorreumClient horreumClient;
 
-    public static io.hyperfoil.tools.horreum.entity.json.TestDTO dummyTest;
+    public static TestDTO dummyTest;
 
 
     @Override
@@ -129,7 +129,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
             dummyTest = null;
         }
         Assertions.assertNull(dummyTest);
-        io.hyperfoil.tools.horreum.entity.json.TestDTO test = new io.hyperfoil.tools.horreum.entity.json.TestDTO();
+        TestDTO test = new TestDTO();
         test.name = "test" ;
         test.owner = "dev-team";
         test.description = "This is a dummy test";

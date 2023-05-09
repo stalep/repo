@@ -14,8 +14,7 @@ import javax.validation.constraints.NotNull;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.entity.json.DataSetDTO;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**

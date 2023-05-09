@@ -17,8 +17,7 @@ import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.entity.alerting.WatchDTO;
-import io.hyperfoil.tools.horreum.entity.json.TestDTO;
+import io.hyperfoil.tools.horreum.api.alerting.WatchDTO;
 import io.hyperfoil.tools.horreum.mapper.WatchMapper;
 import org.jboss.logging.Logger;
 
@@ -28,7 +27,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.hyperfoil.tools.horreum.services.SubscriptionService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.alerting.Watch;
-import io.hyperfoil.tools.horreum.entity.json.Test;
+import io.hyperfoil.tools.horreum.entity.data.Test;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.quarkus.runtime.Startup;
 import io.quarkus.security.identity.SecurityIdentity;

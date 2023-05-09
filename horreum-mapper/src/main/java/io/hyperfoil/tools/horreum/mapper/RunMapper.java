@@ -1,9 +1,9 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.ValidationError;
-import io.hyperfoil.tools.horreum.entity.ValidationErrorDTO;
-import io.hyperfoil.tools.horreum.entity.json.Run;
-import io.hyperfoil.tools.horreum.entity.json.RunDTO;
+import io.hyperfoil.tools.horreum.api.data.ValidationErrorDTO;
+import io.hyperfoil.tools.horreum.entity.data.Run;
+import io.hyperfoil.tools.horreum.api.data.RunDTO;
 
 import java.util.stream.Collectors;
 

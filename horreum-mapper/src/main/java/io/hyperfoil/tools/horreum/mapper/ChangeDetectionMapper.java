@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetection;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetectionDTO;
+import io.hyperfoil.tools.horreum.api.alerting.ChangeDetectionDTO;
 
 public class ChangeDetectionMapper {
 

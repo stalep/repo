@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.horreum.entity.converter;
 
-import io.hyperfoil.tools.horreum.ApiUtil;
+import io.hyperfoil.tools.horreum.api.ApiUtil;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;

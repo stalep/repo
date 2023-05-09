@@ -1,8 +1,10 @@
 package io.hyperfoil.tools.horreum.svc;
 
+import io.hyperfoil.tools.horreum.api.data.ActionDTO;
+import io.hyperfoil.tools.horreum.api.data.AllowedSiteDTO;
 import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDTO;
-import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.api.alerting.ChangeDTO;
+import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.ActionMapper;
 import io.hyperfoil.tools.horreum.mapper.AllowedSiteMapper;
 import io.hyperfoil.tools.horreum.services.ExperimentService;

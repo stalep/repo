@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.report.ReportComment;
-import io.hyperfoil.tools.horreum.entity.report.ReportCommentDTO;
+import io.hyperfoil.tools.horreum.api.report.ReportCommentDTO;
 
 public class ReportCommentMapper {
     public static ReportCommentDTO from(ReportComment rc) {

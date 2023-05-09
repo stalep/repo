@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.json.TestToken;
-import io.hyperfoil.tools.horreum.entity.json.TestTokenDTO;
+import io.hyperfoil.tools.horreum.entity.data.TestToken;
+import io.hyperfoil.tools.horreum.api.data.TestTokenDTO;
 
 public class TestTokenMapper {
     public static TestTokenDTO from(TestToken tt) {

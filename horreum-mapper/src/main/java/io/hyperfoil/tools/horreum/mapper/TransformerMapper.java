@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.json.Transformer;
-import io.hyperfoil.tools.horreum.entity.json.TransformerDTO;
+import io.hyperfoil.tools.horreum.entity.data.Transformer;
+import io.hyperfoil.tools.horreum.api.data.TransformerDTO;
 
 import java.util.Collections;
 import java.util.stream.Collectors;

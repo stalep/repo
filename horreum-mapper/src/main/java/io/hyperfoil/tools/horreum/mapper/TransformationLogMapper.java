@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.TransformationLog;
-import io.hyperfoil.tools.horreum.entity.alerting.TransformationLogDTO;
+import io.hyperfoil.tools.horreum.api.alerting.TransformationLogDTO;
 
 public class TransformationLogMapper {
 

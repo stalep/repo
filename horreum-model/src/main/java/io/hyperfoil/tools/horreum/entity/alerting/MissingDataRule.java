@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import io.hyperfoil.tools.horreum.entity.json.Test;
+import io.hyperfoil.tools.horreum.entity.data.Test;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 // If the test has no dataset matching the rule uploaded for more than this duration (in ms)

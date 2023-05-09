@@ -13,7 +13,7 @@ import org.hibernate.annotations.Type;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 @Entity

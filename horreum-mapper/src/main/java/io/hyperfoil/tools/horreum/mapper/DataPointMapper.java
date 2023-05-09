@@ -1,9 +1,8 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
-import io.hyperfoil.tools.horreum.entity.alerting.DataPointDTO;
-import io.hyperfoil.tools.horreum.entity.alerting.VariableDTO;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
+import io.hyperfoil.tools.horreum.api.alerting.DataPointDTO;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
 
 public class DataPointMapper {
 

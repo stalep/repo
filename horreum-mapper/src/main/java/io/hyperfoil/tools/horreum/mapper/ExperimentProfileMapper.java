@@ -1,9 +1,9 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.ExperimentComparison;
-import io.hyperfoil.tools.horreum.entity.ExperimentComparisonDTO;
+import io.hyperfoil.tools.horreum.api.data.ExperimentComparisonDTO;
 import io.hyperfoil.tools.horreum.entity.ExperimentProfile;
-import io.hyperfoil.tools.horreum.entity.ExperimentProfileDTO;
+import io.hyperfoil.tools.horreum.api.data.ExperimentProfileDTO;
 
 import java.util.stream.Collectors;
 

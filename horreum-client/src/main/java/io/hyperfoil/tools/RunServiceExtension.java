@@ -9,7 +9,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.hyperfoil.tools.horreum.entity.json.RunDTO;
+import io.hyperfoil.tools.horreum.api.data.RunDTO;
 import io.hyperfoil.tools.horreum.services.QueryResult;
 import io.hyperfoil.tools.horreum.services.RunService;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -18,7 +18,7 @@ import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataOutput;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
-import io.hyperfoil.tools.horreum.entity.json.Access;
+import io.hyperfoil.tools.horreum.api.data.Access;
 
 // Note: IDE may show errors because variant of RunService.addRunFromData is not implemented
 // but that method is not present in the class files (removed through @ApiIgnore).

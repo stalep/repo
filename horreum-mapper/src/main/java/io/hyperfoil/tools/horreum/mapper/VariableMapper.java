@@ -1,9 +1,9 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetection;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetectionDTO;
+import io.hyperfoil.tools.horreum.api.alerting.ChangeDetectionDTO;
 import io.hyperfoil.tools.horreum.entity.alerting.Variable;
-import io.hyperfoil.tools.horreum.entity.alerting.VariableDTO;
+import io.hyperfoil.tools.horreum.api.alerting.VariableDTO;
 
 import java.util.stream.Collectors;
 

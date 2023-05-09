@@ -5,15 +5,12 @@ import java.nio.charset.StandardCharsets;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDTO;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
-import io.hyperfoil.tools.horreum.mapper.ChangeMapper;
+import io.hyperfoil.tools.horreum.api.alerting.ChangeDTO;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.json.Test;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 

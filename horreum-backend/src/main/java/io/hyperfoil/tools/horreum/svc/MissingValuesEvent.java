@@ -2,7 +2,7 @@ package io.hyperfoil.tools.horreum.svc;
 
 import java.util.Set;
 
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
 
 public class MissingValuesEvent {
    public DataSet.Info dataset;

@@ -11,7 +11,8 @@ import java.util.stream.StreamSupport;
 
 import javax.ws.rs.core.HttpHeaders;
 
-import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.api.data.*;
+import io.hyperfoil.tools.horreum.entity.data.*;
 import org.junit.jupiter.api.TestInfo;
 
 import com.fasterxml.jackson.databind.JsonNode;

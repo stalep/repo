@@ -1,6 +1,8 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.entity.data.Label;
+import io.hyperfoil.tools.horreum.api.data.LabelDTO;
+import io.hyperfoil.tools.horreum.entity.data.Schema;
 
 import java.util.stream.Collectors;
 

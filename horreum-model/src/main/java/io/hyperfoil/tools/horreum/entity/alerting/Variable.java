@@ -12,6 +12,8 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.NotNull;
 
+import io.hyperfoil.tools.horreum.entity.data.Label;
+import io.hyperfoil.tools.horreum.entity.data.Run;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
@@ -26,8 +28,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**
- * Variable emits a single value from the {@link io.hyperfoil.tools.horreum.entity.json.Run#data}
- * using {@link io.hyperfoil.tools.horreum.entity.json.Label labels} and
+ * Variable emits a single value from the {@link Run#data}
+ * using {@link Label labels} and
  * JavaScript code in {@link #calculation} (calculation is not necessary if there's a single accessor).
  *
  */

@@ -9,14 +9,11 @@ import java.util.function.Consumer;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDTO;
-import io.hyperfoil.tools.horreum.entity.alerting.VariableDTO;
-import io.hyperfoil.tools.horreum.entity.json.DataSetDTO;
 import org.junit.jupiter.api.Test;
 
 import io.hyperfoil.tools.horreum.entity.alerting.Change;
 import io.hyperfoil.tools.horreum.entity.alerting.Variable;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
 import io.hyperfoil.tools.horreum.events.DatasetChanges;
 import io.hyperfoil.tools.horreum.notification.Notification;
 import io.hyperfoil.tools.horreum.notification.NotificationPlugin;

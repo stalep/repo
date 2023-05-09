@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.RunExpectation;
-import io.hyperfoil.tools.horreum.entity.alerting.RunExpectationDTO;
+import io.hyperfoil.tools.horreum.api.alerting.RunExpectationDTO;
 
 public class RunExpectationMapper {
 

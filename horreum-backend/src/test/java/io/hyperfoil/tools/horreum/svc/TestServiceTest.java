@@ -15,8 +15,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import io.hyperfoil.tools.horreum.api.alerting.WatchDTO;
+import io.hyperfoil.tools.horreum.api.data.*;
 import io.hyperfoil.tools.horreum.entity.alerting.*;
-import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.entity.data.*;
 import org.hibernate.query.NativeQuery;
 import org.junit.jupiter.api.TestInfo;
 

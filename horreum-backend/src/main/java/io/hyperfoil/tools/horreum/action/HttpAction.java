@@ -12,7 +12,7 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.json.AllowedSite;
+import io.hyperfoil.tools.horreum.entity.data.AllowedSite;
 import io.hyperfoil.tools.horreum.svc.ServiceException;
 import io.hyperfoil.tools.horreum.svc.Util;
 import io.smallrye.mutiny.Uni;

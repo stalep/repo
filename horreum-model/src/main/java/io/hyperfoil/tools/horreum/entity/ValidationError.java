@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.json.Schema;
+import io.hyperfoil.tools.horreum.entity.data.Schema;
 
 @Embeddable
 public class ValidationError {

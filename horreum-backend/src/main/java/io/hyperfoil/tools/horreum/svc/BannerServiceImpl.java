@@ -12,7 +12,7 @@ import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.entity.BannerDTO;
+import io.hyperfoil.tools.horreum.api.data.BannerDTO;
 import io.hyperfoil.tools.horreum.mapper.BannerMapper;
 import io.hyperfoil.tools.horreum.services.BannerService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;

@@ -21,8 +21,12 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
+import io.hyperfoil.tools.horreum.api.data.ExtractorDTO;
+import io.hyperfoil.tools.horreum.api.data.LabelDTO;
+import io.hyperfoil.tools.horreum.api.data.SchemaDTO;
+import io.hyperfoil.tools.horreum.api.data.TestDTO;
 import io.hyperfoil.tools.horreum.entity.alerting.*;
-import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.LabelMapper;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Disabled;
@@ -35,7 +39,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.hyperfoil.tools.horreum.services.AlertingService;
+import io.hyperfoil.tools.horreum.api.services.AlertingService;
 import io.hyperfoil.tools.horreum.services.TestService;
 import io.hyperfoil.tools.horreum.changedetection.FixedThresholdModel;
 import io.hyperfoil.tools.horreum.entity.Fingerprint;

@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDTO;
-import io.hyperfoil.tools.horreum.entity.json.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
 
 public class DatasetChanges {
    public static final String EVENT_NEW = "datasetChanges/new";

@@ -16,8 +16,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.hyperfoil.tools.horreum.entity.json.*;
-import io.hyperfoil.tools.horreum.entity.report.*;
+import io.hyperfoil.tools.horreum.api.report.ReportCommentDTO;
+import io.hyperfoil.tools.horreum.api.report.ReportComponentDTO;
+import io.hyperfoil.tools.horreum.api.report.TableReportConfigDTO;
+import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.ExtractorDTO;
+import io.hyperfoil.tools.horreum.api.data.SchemaDTO;
+import io.hyperfoil.tools.horreum.api.data.TestDTO;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
 import io.hyperfoil.tools.horreum.test.PostgresResource;
 import io.quarkus.test.common.QuarkusTestResource;

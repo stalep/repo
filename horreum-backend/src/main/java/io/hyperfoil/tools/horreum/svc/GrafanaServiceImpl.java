@@ -20,7 +20,7 @@ import io.hyperfoil.tools.horreum.services.GrafanaService;
 import io.hyperfoil.tools.horreum.entity.alerting.Change;
 import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
 import io.hyperfoil.tools.horreum.entity.alerting.Variable;
-import io.hyperfoil.tools.horreum.grafana.Target;
+import io.hyperfoil.tools.horreum.api.grafana.Target;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 
 /**

@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.Banner;
-import io.hyperfoil.tools.horreum.entity.BannerDTO;
+import io.hyperfoil.tools.horreum.api.data.BannerDTO;
 
 public class BannerMapper {
 

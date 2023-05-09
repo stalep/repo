@@ -1,9 +1,9 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.json.Test;
-import io.hyperfoil.tools.horreum.entity.json.TestDTO;
-import io.hyperfoil.tools.horreum.entity.json.TestToken;
-import io.hyperfoil.tools.horreum.entity.json.TestTokenDTO;
+import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.api.data.TestDTO;
+import io.hyperfoil.tools.horreum.entity.data.TestToken;
+import io.hyperfoil.tools.horreum.api.data.TestTokenDTO;
 
 import java.util.stream.Collectors;
 

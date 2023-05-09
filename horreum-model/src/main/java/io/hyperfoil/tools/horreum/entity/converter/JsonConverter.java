@@ -5,7 +5,7 @@ import javax.persistence.Converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.hyperfoil.tools.horreum.ApiUtil;
+import io.hyperfoil.tools.horreum.api.ApiUtil;
 
 @Converter
 public class JsonConverter implements AttributeConverter<JsonNode, String> {

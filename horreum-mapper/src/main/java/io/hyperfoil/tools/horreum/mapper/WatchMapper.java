@@ -1,8 +1,8 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.Watch;
-import io.hyperfoil.tools.horreum.entity.alerting.WatchDTO;
-import io.hyperfoil.tools.horreum.entity.json.Test;
+import io.hyperfoil.tools.horreum.api.alerting.WatchDTO;
+import io.hyperfoil.tools.horreum.entity.data.Test;
 
 public class WatchMapper {
     public static WatchDTO from(Watch w) {

@@ -2,8 +2,8 @@ package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.report.TableReport;
 import io.hyperfoil.tools.horreum.entity.report.TableReportConfig;
-import io.hyperfoil.tools.horreum.entity.report.TableReportConfigDTO;
-import io.hyperfoil.tools.horreum.entity.report.TableReportDTO;
+import io.hyperfoil.tools.horreum.api.report.TableReportConfigDTO;
+import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
 
 import java.util.stream.Collectors;
 

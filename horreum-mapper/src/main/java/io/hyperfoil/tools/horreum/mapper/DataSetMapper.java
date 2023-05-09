@@ -1,6 +1,8 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.json.*;
+import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.DataSetDTO;
+import io.hyperfoil.tools.horreum.entity.data.Run;
 
 public class DataSetMapper {
 

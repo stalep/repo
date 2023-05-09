@@ -1,7 +1,7 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;
-import io.hyperfoil.tools.horreum.entity.alerting.DatasetLogDTO;
+import io.hyperfoil.tools.horreum.api.alerting.DatasetLogDTO;
 
 public class DatasetLogMapper {
     public static DatasetLogDTO from(DatasetLog dl) {
