@@ -47,15 +47,15 @@ import io.hyperfoil.tools.horreum.api.alerting.*;
 import io.hyperfoil.tools.horreum.api.services.AlertingService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.changedetection.FixedThresholdModel;
-import io.hyperfoil.tools.horreum.entity.Fingerprint;
+import io.hyperfoil.tools.horreum.entity.FingerprintDAO;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
 import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.changedetection.ChangeDetectionModel;
 import io.hyperfoil.tools.horreum.changedetection.RelativeDifferenceChangeDetectionModel;
 
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
-import io.hyperfoil.tools.horreum.entity.data.Run;
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
+import io.hyperfoil.tools.horreum.entity.data.RunDAO;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.hyperfoil.tools.horreum.mapper.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -210,10 +210,10 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onLabelsUpdated(DataSet.LabelsUpdatedEvent event) {
+   public void onLabelsUpdated(DataSetDAO.LabelsUpdatedEvent event) {
       boolean sendNotifications;
-      DataPoint.delete("dataset_id", event.datasetId);
-      DataSet dataset = DataSet.findById(event.datasetId);
+      DataPointDAO.delete("dataset_id", event.datasetId);
+      DataSetDAO dataset = DataSetDAO.findById(event.datasetId);
       if (dataset == null) {
          // The run is not committed yet?
          vertx.setTimer(1000, timerId -> messageBus.executeForTest(event.datasetId,
@@ -238,7 +238,7 @@ public class AlertingServiceImpl implements AlertingService {
       recalculateMissingDataRules(dataset);
    }
 
-   private void recalculateMissingDataRules(DataSet dataset) {
+   private void recalculateMissingDataRules(DataSetDAO dataset) {
       MissingDataRuleResult.deleteForDataset(dataset.id);
       @SuppressWarnings("unchecked") List<Object[]> ruleValues = em.createNativeQuery(LOOKUP_RULE_LABEL_VALUES)
             .setParameter(1, dataset.id).setParameter(2, dataset.testid)
@@ -265,17 +265,17 @@ public class AlertingServiceImpl implements AlertingService {
             output -> logMissingDataMessage(dataset, PersistentLog.DEBUG, "Output while evaluating missing data rules for dataset %d: '%s'", dataset.id, output));
    }
 
-   private void createMissingDataRuleResult(DataSet dataset, int ruleId) {
+   private void createMissingDataRuleResult(DataSetDAO dataset, int ruleId) {
       new MissingDataRuleResult(ruleId, dataset.id, dataset.start).persist();
    }
 
    @PostConstruct
    void init() {
-      messageBus.subscribe(DataSet.EVENT_LABELS_UPDATED, "AlertingService", DataSet.LabelsUpdatedEvent.class, this::onLabelsUpdated);
-      messageBus.subscribe(DataSet.EVENT_DELETED, "AlertingService", DataSet.Info.class, this::onDatasetDeleted);
-      messageBus.subscribe(DataPoint.EVENT_NEW, "AlertingService", DataPoint.Event.class, this::onNewDataPoint);
-      messageBus.subscribe(Run.EVENT_NEW, "AlertingService", Run.class, this::removeExpected);
-      messageBus.subscribe(Test.EVENT_DELETED, "AlertingService", Test.class, this::onTestDeleted);
+      messageBus.subscribe(DataSetDAO.EVENT_LABELS_UPDATED, "AlertingService", DataSetDAO.LabelsUpdatedEvent.class, this::onLabelsUpdated);
+      messageBus.subscribe(DataSetDAO.EVENT_DELETED, "AlertingService", DataSetDAO.Info.class, this::onDatasetDeleted);
+      messageBus.subscribe(DataPointDAO.EVENT_NEW, "AlertingService", DataPointDAO.Event.class, this::onNewDataPoint);
+      messageBus.subscribe(RunDAO.EVENT_NEW, "AlertingService", RunDAO.class, this::removeExpected);
+      messageBus.subscribe(TestDAO.EVENT_DELETED, "AlertingService", TestDAO.class, this::onTestDeleted);
       if (grafanaBaseUrl.isPresent() && updateGrafanaDatasource.orElse(true)) {
          setupGrafanaDatasource(0);
       }
@@ -331,9 +331,9 @@ public class AlertingServiceImpl implements AlertingService {
       }
    }
 
-   private void recalculateDatapointsForDataset(DataSet dataset, boolean notify, boolean debug, Recalculation recalculation) {
+   private void recalculateDatapointsForDataset(DataSetDAO dataset, boolean notify, boolean debug, Recalculation recalculation) {
       log.debugf("Analyzing dataset %d (%d/%d)", (long)dataset.id, (long)dataset.run.id, dataset.ordinal);
-      Test test = Test.findById(dataset.testid);
+      TestDAO test = TestDAO.findById(dataset.testid);
       if (test == null) {
          log.errorf("Cannot load test ID %d", dataset.testid);
          return;
@@ -345,7 +345,7 @@ public class AlertingServiceImpl implements AlertingService {
       emitDatapoints(dataset, notify, debug, recalculation);
    }
 
-   private boolean testFingerprint(DataSet dataset, String filter) {
+   private boolean testFingerprint(DataSetDAO dataset, String filter) {
       if (filter == null || filter.isBlank()) {
          return true;
       }
@@ -378,9 +378,9 @@ public class AlertingServiceImpl implements AlertingService {
 
    JsonNode exportTest(int testId) {
       ObjectNode config = JsonNodeFactory.instance.objectNode();
-      List<Variable> variables = Variable.list("testid", testId);
+      List<VariableDAO> variables = VariableDAO.list("testid", testId);
       config.set("variables", Util.OBJECT_MAPPER.valueToTree(variables.stream().map(VariableMapper::from).collect(Collectors.toList())));
-      List<MissingDataRule> rules = MissingDataRule.list("test_id", testId);
+      List<MissingDataRuleDAO> rules = MissingDataRuleDAO.list("test_id", testId);
       config.set("missingDataRules", Util.OBJECT_MAPPER.valueToTree(rules.stream().map(MissingDataRuleMapper::from).collect(Collectors.toList())));
       return config;
    }
@@ -393,7 +393,7 @@ public class AlertingServiceImpl implements AlertingService {
          log.debugf("Importing %d change detection variables for test %d", variablesNode.size(), testId);
          for (var node : variablesNode) {
             try {
-               Variable variable = VariableMapper.to(Util.OBJECT_MAPPER.treeToValue(node, VariableDTO.class));
+               VariableDAO variable = VariableMapper.to(Util.OBJECT_MAPPER.treeToValue(node, VariableDTO.class));
                variable.testId = testId;
                variable.ensureLinked();
                if(forceUseTestId) {
@@ -446,7 +446,7 @@ public class AlertingServiceImpl implements AlertingService {
       }
    }
 
-   private void emitDatapoints(DataSet dataset, boolean notify, boolean debug, Recalculation recalculation) {
+   private void emitDatapoints(DataSetDAO dataset, boolean notify, boolean debug, Recalculation recalculation) {
       Set<String> missingValueVariables = new HashSet<>();
       @SuppressWarnings("unchecked")
       List<VariableData> values = em.createNativeQuery(LOOKUP_VARIABLES)
@@ -540,60 +540,60 @@ public class AlertingServiceImpl implements AlertingService {
             output -> logCalculationMessage(dataset, PersistentLog.DEBUG, "Output while calculating variable: <pre>%s</pre>", output)
       );
       if (!missingValueVariables.isEmpty()) {
-         messageBus.publish(DataSet.EVENT_MISSING_VALUES, dataset.testid, new MissingValuesEvent(dataset.getInfo(), missingValueVariables, notify));
+         messageBus.publish(DataSetDAO.EVENT_MISSING_VALUES, dataset.testid, new MissingValuesEvent(dataset.getInfo(), missingValueVariables, notify));
       }
-      messageBus.publish(DataPoint.EVENT_DATASET_PROCESSED, dataset.testid, new DataPoint.DatasetProcessedEvent(dataset.getInfo(), notify));
+      messageBus.publish(DataPointDAO.EVENT_DATASET_PROCESSED, dataset.testid, new DataPointDAO.DatasetProcessedEvent(dataset.getInfo(), notify));
    }
 
-   private void createDataPoint(DataSet dataset, Instant timestamp, int variableId, double value, boolean notify) {
-      DataPoint dataPoint = new DataPoint();
-      dataPoint.variable = em.getReference(Variable.class, variableId);
+   private void createDataPoint(DataSetDAO dataset, Instant timestamp, int variableId, double value, boolean notify) {
+      DataPointDAO dataPoint = new DataPointDAO();
+      dataPoint.variable = em.getReference(VariableDAO.class, variableId);
       dataPoint.dataset = dataset;
       dataPoint.timestamp = timestamp;
       dataPoint.value = value;
       dataPoint.persist();
-      messageBus.publish(DataPoint.EVENT_NEW, dataset.testid,
-              new DataPoint.Event(dataPoint, dataset.testid, notify));
+      messageBus.publish(DataPointDAO.EVENT_NEW, dataset.testid,
+              new DataPointDAO.Event(dataPoint, dataset.testid, notify));
    }
 
-   private void logCalculationMessage(DataSet dataSet, int level, String format, Object... args) {
+   private void logCalculationMessage(DataSetDAO dataSet, int level, String format, Object... args) {
       logCalculationMessage(dataSet.testid, dataSet.id, level, format, args);
    }
 
    private void logCalculationMessage(int testId, int datasetId, int level, String format, Object... args) {
       String msg = args.length == 0 ? format : String.format(format, args);
       log.tracef("Logging %s for test %d, dataset %d: %s", PersistentLog.logLevel(level), testId, datasetId, msg);
-      new DatasetLog(em.getReference(Test.class, testId), em.getReference(DataSet.class, datasetId),
+      new DatasetLogDAO(em.getReference(TestDAO.class, testId), em.getReference(DataSetDAO.class, datasetId),
             level, "variables", msg).persist();
    }
 
-   private void logMissingDataMessage(DataSet dataSet, int level, String format, Object... args) {
+   private void logMissingDataMessage(DataSetDAO dataSet, int level, String format, Object... args) {
       logMissingDataMessage(dataSet.testid, dataSet.id, level, format, args);
    }
 
    private void logMissingDataMessage(int testId, int datasetId, int level, String format, Object... args) {
       String msg = args.length == 0 ? format : String.format(format, args);
       log.tracef("Logging %s for test %d, dataset %d: %s", PersistentLog.logLevel(level), testId, datasetId, msg);
-      new DatasetLog(em.getReference(Test.class, testId), em.getReference(DataSet.class, datasetId),
+      new DatasetLogDAO(em.getReference(TestDAO.class, testId), em.getReference(DataSetDAO.class, datasetId),
             level, "missingdata", msg).persist();
    }
 
    private void logChangeDetectionMessage(int testId, int datasetId, int level, String format, Object... args) {
       String msg = args.length == 0 ? format : String.format(format, args);
       log.tracef("Logging %s for test %d, dataset %d: %s", PersistentLog.logLevel(level), testId, datasetId, msg);
-      new DatasetLog(em.getReference(Test.class, testId), em.getReference(DataSet.class, datasetId),
+      new DatasetLogDAO(em.getReference(TestDAO.class, testId), em.getReference(DataSetDAO.class, datasetId),
             level, "changes", msg).persist();
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onNewDataPoint(DataPoint.Event event) {
-      DataPoint dataPoint = event.dataPoint;
-      dataPoint.variable = Variable.findById(dataPoint.variable.id);
+   void onNewDataPoint(DataPointDAO.Event event) {
+      DataPointDAO dataPoint = event.dataPoint;
+      dataPoint.variable = VariableDAO.findById(dataPoint.variable.id);
       log.debugf("Processing new datapoint for dataset %d at %s, variable %d (%s), value %f",
             dataPoint.dataset.id, dataPoint.timestamp,
             dataPoint.variable.id, dataPoint.variable.name, dataPoint.value);
-      JsonNode fingerprint = Fingerprint.<Fingerprint>findByIdOptional(dataPoint.dataset.id).map(fp -> fp.fingerprint).orElse(null);
+      JsonNode fingerprint = FingerprintDAO.<FingerprintDAO>findByIdOptional(dataPoint.dataset.id).map(fp -> fp.fingerprint).orElse(null);
 
       VarAndFingerprint key = new VarAndFingerprint(dataPoint.variable.id, fingerprint);
       log.debugf("Invalidating variable %d FP %s timestamp %s, current value is %s", dataPoint.variable.id, fingerprint, dataPoint.timestamp, validUpTo.get(key));
@@ -604,16 +604,16 @@ public class AlertingServiceImpl implements AlertingService {
             return current;
          }
       });
-      runChangeDetection(Variable.findById(dataPoint.variable.id), fingerprint, event.notify, true);
+      runChangeDetection(VariableDAO.findById(dataPoint.variable.id), fingerprint, event.notify, true);
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void tryRunChangeDetection(Variable variable, JsonNode fingerprint, boolean notify) {
+   void tryRunChangeDetection(VariableDAO variable, JsonNode fingerprint, boolean notify) {
       runChangeDetection(variable, fingerprint, notify, false);
    }
 
-   private void runChangeDetection(Variable variable, JsonNode fingerprint, boolean notify, boolean expectExists) {
+   private void runChangeDetection(VariableDAO variable, JsonNode fingerprint, boolean notify, boolean expectExists) {
       UpTo valid = validUpTo.get(new VarAndFingerprint(variable.id, fingerprint));
       @SuppressWarnings("unchecked") Timestamp nextTimestamp = (Timestamp) em.createNativeQuery(
             "SELECT MIN(timestamp) FROM datapoint dp LEFT JOIN fingerprint fp ON dp.dataset_id = fp.dataset_id " +
@@ -647,14 +647,14 @@ public class AlertingServiceImpl implements AlertingService {
       var changeQuery = em.createQuery("SELECT c FROM Change c LEFT JOIN Fingerprint fp ON c.dataset.id = fp.dataset.id " +
             "WHERE c.variable = ?1 AND (c.timestamp < ?2 OR (c.timestamp = ?2 AND ?3 = TRUE)) AND " +
             "TRUE = function('json_equals', fp.fingerprint, ?4) " +
-            "ORDER by c.timestamp DESC", Change.class);
+            "ORDER by c.timestamp DESC", ChangeDAO.class);
       changeQuery
             .setParameter(1, variable)
             .setParameter(2, valid != null ? valid.timestamp : VERY_DISTANT_FUTURE)
             .setParameter(3, valid == null || valid.inclusive)
             .unwrap(org.hibernate.query.Query.class)
             .setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE);
-      Change lastChange = changeQuery.setMaxResults(1).getResultStream().findFirst().orElse(null);
+      ChangeDAO lastChange = changeQuery.setMaxResults(1).getResultStream().findFirst().orElse(null);
 
       Instant changeTimestamp = LONG_TIME_AGO;
       if (lastChange != null) {
@@ -662,12 +662,12 @@ public class AlertingServiceImpl implements AlertingService {
          changeTimestamp = lastChange.timestamp;
       }
 
-      @SuppressWarnings("unchecked") List<DataPoint> dataPoints = em.createQuery(
+      @SuppressWarnings("unchecked") List<DataPointDAO> dataPoints = em.createQuery(
             "SELECT dp FROM DataPoint dp LEFT JOIN Fingerprint fp ON dp.dataset.id = fp.dataset.id " +
             "JOIN dp.dataset " + // ignore datapoints (that were not deleted yet) from deleted datasets
             "WHERE dp.variable = ?1 AND dp.timestamp BETWEEN ?2 AND ?3 " +
             "AND TRUE = function('json_equals', fp.fingerprint, ?4) " +
-            "ORDER BY dp.timestamp DESC, dp.dataset.id DESC", DataPoint.class)
+            "ORDER BY dp.timestamp DESC, dp.dataset.id DESC", DataPointDAO.class)
             .setParameter(1, variable)
             .setParameter(2, changeTimestamp)
             .setParameter(3, nextTimestamp.toInstant())
@@ -680,7 +680,7 @@ public class AlertingServiceImpl implements AlertingService {
          }
       } else {
          int datasetId = dataPoints.get(0).getDatasetId();
-         for (ChangeDetection detection : ChangeDetection.<ChangeDetection>find("variable", variable).list()) {
+         for (ChangeDetectionDAO detection : ChangeDetectionDAO.<ChangeDetectionDAO>find("variable", variable).list()) {
             ChangeDetectionModel model = MODELS.get(detection.model);
             if (model == null) {
                logChangeDetectionMessage(variable.testId, datasetId, PersistentLog.ERROR, "Cannot find change detection model %s", detection.model);
@@ -690,13 +690,13 @@ public class AlertingServiceImpl implements AlertingService {
                logChangeDetectionMessage(variable.testId, datasetId, PersistentLog.DEBUG,
                      "Change %s detected using datapoints %s", change, reversedAndLimited(dataPoints));
                Query datasetQuery = em.createNativeQuery("SELECT id, runid as \"runId\", ordinal, testid as \"testId\" FROM dataset WHERE id = ?1");
-               SqlServiceImpl.setResultTransformer(datasetQuery, Transformers.aliasToBean(DataSet.Info.class));
-               DataSet.Info info = (DataSet.Info) datasetQuery.setParameter(1, change.dataset.id).getSingleResult();
+               SqlServiceImpl.setResultTransformer(datasetQuery, Transformers.aliasToBean(DataSetDAO.Info.class));
+               DataSetDAO.Info info = (DataSetDAO.Info) datasetQuery.setParameter(1, change.dataset.id).getSingleResult();
                em.persist(change);
                Hibernate.initialize(change.dataset.run.id);
-               String testName = Test.<Test>findByIdOptional(variable.testId).map(test -> test.name).orElse("<unknown>");
-               messageBus.publish(Change.EVENT_NEW, change.dataset.testid,
-                       new Change.Event(change, testName, info, notify));
+               String testName = TestDAO.<TestDAO>findByIdOptional(variable.testId).map(test -> test.name).orElse("<unknown>");
+               messageBus.publish(ChangeDAO.EVENT_NEW, change.dataset.testid,
+                       new ChangeDAO.Event(change, testName, info, notify));
             });
          }
       }
@@ -706,7 +706,7 @@ public class AlertingServiceImpl implements AlertingService {
       });
    }
 
-   private void validateUpTo(Variable variable, JsonNode fingerprint, Instant timestamp) {
+   private void validateUpTo(VariableDAO variable, JsonNode fingerprint, Instant timestamp) {
       validUpTo.compute(new VarAndFingerprint(variable.id, fingerprint), (ignored, current) -> {
          log.debugf("Attempt %s, valid up to %s, ", timestamp, current);
          if (current == null || !current.timestamp.isAfter(timestamp)) {
@@ -717,7 +717,7 @@ public class AlertingServiceImpl implements AlertingService {
       });
    }
 
-   private String reversedAndLimited(List<DataPoint> list) {
+   private String reversedAndLimited(List<DataPointDAO> list) {
       int maxIndex = Math.min(list.size() - 1, 20);
       StringBuilder sb = new StringBuilder("[");
       if (maxIndex < list.size() - 1) {
@@ -734,11 +734,11 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles
    @PermitAll
    public List<VariableDTO> variables(Integer testId) {
-      List<Variable> variables;
+      List<VariableDAO> variables;
       if (testId != null) {
-         variables = Variable.list("testid", testId);
+         variables = VariableDAO.list("testid", testId);
       } else {
-         variables = Variable.listAll();
+         variables = VariableDAO.listAll();
       }
       return variables.stream().map(VariableMapper::from).collect(Collectors.toList());
    }
@@ -757,8 +757,8 @@ public class AlertingServiceImpl implements AlertingService {
          }
       }
       try {
-         List<Variable> variables = variablesDTO.stream().map(VariableMapper::to).collect(Collectors.toList());
-         List<Variable> currentVariables = Variable.list("testid", testId);
+         List<VariableDAO> variables = variablesDTO.stream().map(VariableMapper::to).collect(Collectors.toList());
+         List<VariableDAO> currentVariables = VariableDAO.list("testid", testId);
          updateCollection(currentVariables, variables, v -> v.id, item -> {
             if (item.id != null && item.id <= 0) {
                item.id = null;
@@ -790,8 +790,8 @@ public class AlertingServiceImpl implements AlertingService {
             }, PanacheEntityBase::delete);
             current.persist();
          }, current -> {
-            DataPoint.delete("variable_id", current.id);
-            Change.delete("variable_id", current.id);
+            DataPointDAO.delete("variable_id", current.id);
+            ChangeDAO.delete("variable_id", current.id);
             current.delete();
          });
 
@@ -812,7 +812,7 @@ public class AlertingServiceImpl implements AlertingService {
       }
    }
 
-   private void ensureDefaults(Set<ChangeDetection> rds) {
+   private void ensureDefaults(Set<ChangeDetectionDAO> rds) {
       rds.forEach(rd -> {
          ChangeDetectionModel model = MODELS.get(rd.model);
          if (model == null) {
@@ -865,25 +865,25 @@ public class AlertingServiceImpl implements AlertingService {
       }
    }
 
-   private DashboardInfo createDashboard(int testId, String fingerprint, List<Variable> variables) {
+   private DashboardInfo createDashboard(int testId, String fingerprint, List<VariableDAO> variables) {
       DashboardInfo info = new DashboardInfo();
       info.testId = testId;
       Dashboard dashboard = new Dashboard();
-      dashboard.title = Test.<Test>findByIdOptional(testId).map(t -> t.name).orElse("Test " + testId)
+      dashboard.title = TestDAO.<TestDAO>findByIdOptional(testId).map(t -> t.name).orElse("Test " + testId)
             + (fingerprint.isEmpty() ? "" : ", " + fingerprint);
       dashboard.tags.add(testId + ";" + fingerprint);
       dashboard.tags.add("testId=" + testId);
       int i = 0;
-      Map<String, List<Variable>> byGroup = groupedVariables(variables);
-      for (Variable variable : variables) {
+      Map<String, List<VariableDAO>> byGroup = groupedVariables(variables);
+      for (VariableDAO variable : variables) {
          dashboard.annotations.list.add(new Dashboard.Annotation(variable.name, variable.id + ";" + fingerprint));
       }
-      for (Map.Entry<String, List<Variable>> entry : byGroup.entrySet()) {
+      for (Map.Entry<String, List<VariableDAO>> entry : byGroup.entrySet()) {
          entry.getValue().sort(Comparator.comparing(v -> v.name));
          Dashboard.Panel panel = new Dashboard.Panel(entry.getKey(), new Dashboard.GridPos(12 * (i % 2), 9 * (i / 2), 12, 9));
          info.panels.add(new PanelInfo(entry.getKey(),
                  entry.getValue().stream().map(VariableMapper::from).collect(Collectors.toList())));
-         for (Variable variable : entry.getValue()) {
+         for (VariableDAO variable : entry.getValue()) {
             panel.targets.add(new Target(variable.id + ";" + fingerprint, "timeseries", "T" + i));
          }
          dashboard.panels.add(panel);
@@ -905,9 +905,9 @@ public class AlertingServiceImpl implements AlertingService {
       }
    }
 
-   private Map<String, List<Variable>> groupedVariables(List<Variable> variables) {
-      Map<String, List<Variable>> byGroup = new TreeMap<>();
-      for (Variable variable : variables) {
+   private Map<String, List<VariableDAO>> groupedVariables(List<VariableDAO> variables) {
+      Map<String, List<VariableDAO>> byGroup = new TreeMap<>();
+      for (VariableDAO variable : variables) {
          byGroup.computeIfAbsent(variable.group == null || variable.group.isEmpty() ? variable.name : variable.group, g -> new ArrayList<>()).add(variable);
       }
       return byGroup;
@@ -922,7 +922,7 @@ public class AlertingServiceImpl implements AlertingService {
          fingerprint = "";
       }
       GrafanaClient.GetDashboardResponse response = findDashboard(testId, fingerprint);
-      List<Variable> variables = Variable.list("testid", testId);
+      List<VariableDAO> variables = VariableDAO.list("testid", testId);
       DashboardInfo dashboard;
       if (response == null) {
          dashboard = createDashboard(testId, fingerprint, variables);
@@ -946,18 +946,18 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles
    @PermitAll
    public List<ChangeDTO> changes(int varId, String fingerprint) {
-      Variable v = Variable.findById(varId);
+      VariableDAO v = VariableDAO.findById(varId);
       if (v == null) {
          throw ServiceException.notFound("Variable " + varId + " not found");
       }
       JsonNode fp = Util.parseFingerprint(fingerprint);
       if (fp == null) {
-         List<Change> changes = Change.list("variable", v);
+         List<ChangeDAO> changes = ChangeDAO.list("variable", v);
          return changes.stream().map(ChangeMapper::from).collect(Collectors.toList());
       }
       //noinspection unchecked
-      List<Change> changes = em.createNativeQuery("SELECT change.* FROM change JOIN fingerprint fp ON change.dataset_id = fp.dataset_id " +
-            "WHERE variable_id = ?1 AND json_equals(fp.fingerprint, ?2)", Change.class)
+      List<ChangeDAO> changes = em.createNativeQuery("SELECT change.* FROM change JOIN fingerprint fp ON change.dataset_id = fp.dataset_id " +
+            "WHERE variable_id = ?1 AND json_equals(fp.fingerprint, ?2)", ChangeDAO.class)
             .setParameter(1, varId).unwrap(NativeQuery.class)
             .setParameter(2, fp, JsonNodeBinaryType.INSTANCE)
             .getResultList();
@@ -973,7 +973,7 @@ public class AlertingServiceImpl implements AlertingService {
          if (id != apiChange.id) {
             throw ServiceException.badRequest("Path ID and entity don't match");
          }
-         Change jpaChange = em.find(Change.class, id);
+         ChangeDAO jpaChange = em.find(ChangeDAO.class, id);
          if ( jpaChange != null ) {
             jpaChange.confirmed = apiChange.confirmed;
             em.merge(jpaChange);
@@ -991,7 +991,7 @@ public class AlertingServiceImpl implements AlertingService {
    @RolesAllowed(Roles.TESTER)
    @Transactional
    public void deleteChange(int id) {
-      if (!Change.deleteById(id)) {
+      if (!ChangeDAO.deleteById(id)) {
          throw ServiceException.notFound("Change not found");
       }
    }
@@ -1001,7 +1001,7 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles
    public void recalculateDatapoints(int testId, boolean notify,
                                      boolean debug, Long from, Long to) {
-      Test test = Test.findById(testId);
+      TestDAO test = TestDAO.findById(testId);
       if (test == null) {
          throw ServiceException.notFound("Test " + testId + " does not exist or is not available.");
       } else if (!Roles.hasRoleWithSuffix(identity, test.owner, "-tester")) {
@@ -1059,8 +1059,8 @@ public class AlertingServiceImpl implements AlertingService {
             .setParameter(3, to == null ? Long.MAX_VALUE : to);
       @SuppressWarnings("unchecked")
       List<Integer> ids = query.getResultList();
-      DataPoint.delete("dataset_id in ?1", ids);
-      Change.delete("dataset_id in ?1 AND confirmed = false", ids);
+      DataPointDAO.delete("dataset_id in ?1", ids);
+      ChangeDAO.delete("dataset_id in ?1 AND confirmed = false", ids);
       if (ids.size() > 0) {
          // Due to RLS policies we cannot add a record to a dataset we don't own
          logCalculationMessage(testId, ids.get(0), PersistentLog.INFO, "Starting recalculation of %d runs.", ids.size());
@@ -1071,7 +1071,7 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional(Transactional.TxType.REQUIRES_NEW)
    void recalculateForDataset(Integer datasetId, boolean notify, boolean debug, Recalculation recalculation) {
-      DataSet dataset = DataSet.findById(datasetId);
+      DataSetDAO dataset = DataSetDAO.findById(datasetId);
       if ( dataset != null ) {
          recalculateDatapointsForDataset(dataset, notify, debug, recalculation);
       } else {
@@ -1144,8 +1144,8 @@ public class AlertingServiceImpl implements AlertingService {
       } else if (timeoutSeconds <= 0) {
          throw ServiceException.badRequest("Timeout must be positive (unit: seconds)");
       }
-      Test test = testService.ensureTestExists(testNameOrId, null);
-      RunExpectation runExpectation = new RunExpectation();
+      TestDAO test = testService.ensureTestExists(testNameOrId, null);
+      RunExpectationDAO runExpectation = new RunExpectationDAO();
       runExpectation.testId = test.id;
       runExpectation.expectedBefore = timeService.now().plusSeconds(timeoutSeconds);
       runExpectation.expectedBy = expectedBy != null ? expectedBy : identity.getPrincipal().getName();
@@ -1160,7 +1160,7 @@ public class AlertingServiceImpl implements AlertingService {
       if (!isTest.orElse(false)) {
          throw ServiceException.notFound("Not available without test mode.");
       }
-      List<RunExpectation> expectations =  RunExpectation.listAll();
+      List<RunExpectationDAO> expectations =  RunExpectationDAO.listAll();
       return expectations.stream().map(RunExpectationMapper::from).collect(Collectors.toList());
    }
 
@@ -1168,7 +1168,7 @@ public class AlertingServiceImpl implements AlertingService {
    @Transactional
    @Override
    public void updateChangeDetection(int testId, AlertingService.ChangeDetectionUpdate update) {
-      Test test = testService.getTestForUpdate(testId);
+      TestDAO test = testService.getTestForUpdate(testId);
       test.timelineLabels = toJsonArray(update.timelineLabels);
       test.timelineFunction = "";
       test.timelineFunction = update.timelineFunction;
@@ -1195,11 +1195,11 @@ public class AlertingServiceImpl implements AlertingService {
    @PermitAll
    @Override
    public List<ChangeDetectionDTO> defaultChangeDetectionConfigs() {
-      ChangeDetection lastDatapoint = new ChangeDetection();
+      ChangeDetectionDAO lastDatapoint = new ChangeDetectionDAO();
       lastDatapoint.model = RelativeDifferenceChangeDetectionModel.NAME;
       lastDatapoint.config = JsonNodeFactory.instance.objectNode()
             .put("window", 1).put("filter", "mean").put("threshold", 0.2).put("minPrevious", 5);
-      ChangeDetection floatingWindow = new ChangeDetection();
+      ChangeDetectionDAO floatingWindow = new ChangeDetectionDAO();
       floatingWindow.model = RelativeDifferenceChangeDetectionModel.NAME;
       floatingWindow.config = JsonNodeFactory.instance.objectNode()
             .put("window", 5).put("filter", "mean").put("threshold", 0.1).put("minPrevious", 5);
@@ -1212,7 +1212,7 @@ public class AlertingServiceImpl implements AlertingService {
       if (testId <= 0) {
          throw ServiceException.badRequest("Invalid test ID: " + testId);
       }
-      List<MissingDataRule> rules = MissingDataRule.list("test.id", testId);
+      List<MissingDataRuleDAO> rules = MissingDataRuleDAO.list("test.id", testId);
       return rules.stream().map(MissingDataRuleMapper::from).collect(Collectors.toList());
    }
 
@@ -1220,7 +1220,7 @@ public class AlertingServiceImpl implements AlertingService {
    @Transactional
    @Override
    public int updateMissingDataRule(int testId, MissingDataRuleDTO dto) {
-      MissingDataRule rule = MissingDataRuleMapper.to(dto);
+      MissingDataRuleDAO rule = MissingDataRuleMapper.to(dto);
       // check test existence and ownership
       testService.getTestForUpdate(testId);
       if (rule.id != null && rule.id <= 0) {
@@ -1233,10 +1233,10 @@ public class AlertingServiceImpl implements AlertingService {
       }
 
       if (rule.id == null) {
-         rule.test = em.getReference(Test.class, testId);
+         rule.test = em.getReference(TestDAO.class, testId);
          rule.persistAndFlush();
       } else {
-         MissingDataRule existing = MissingDataRule.findById(rule.id);
+         MissingDataRuleDAO existing = MissingDataRuleDAO.findById(rule.id);
          if (existing == null) {
             throw ServiceException.badRequest("Rule does not exist.");
          } else if (existing.test.id != testId) {
@@ -1258,7 +1258,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void recalculateMissingDataRules(int testId, MissingDataRule rule) {
+   void recalculateMissingDataRules(int testId, MissingDataRuleDAO rule) {
       @SuppressWarnings("unchecked") List<Object[]> idsAndTimestamps =
             em.createNativeQuery("SELECT id, start FROM dataset WHERE testid = ?1")
                   .setParameter(1, testId).getResultList();
@@ -1269,7 +1269,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional(Transactional.TxType.REQUIRES_NEW)
-   void recalculateMissingDataRule(int datasetId, Instant timestamp, MissingDataRule rule) {
+   void recalculateMissingDataRule(int datasetId, Instant timestamp, MissingDataRuleDAO rule) {
       JsonNode value = (JsonNode) em.createNativeQuery(LOOKUP_LABEL_VALUE_FOR_RULE)
             .setParameter(1, datasetId).setParameter(2, rule.id)
             .unwrap(NativeQuery.class)
@@ -1298,7 +1298,7 @@ public class AlertingServiceImpl implements AlertingService {
    @Transactional
    @Override
    public void deleteMissingDataRule(int id) {
-      MissingDataRule.deleteById(id);
+      MissingDataRuleDAO.deleteById(id);
    }
 
    @Override
@@ -1313,7 +1313,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void removeExpected(Run run) {
+   public void removeExpected(RunDAO run) {
       // delete at most one expectation
       Query query = em.createNativeQuery("DELETE FROM run_expectation WHERE id = (SELECT id FROM run_expectation WHERE testid = (SELECT testid FROM run WHERE id = ?1) LIMIT 1)");
       query.setParameter(1, run.id);
@@ -1325,28 +1325,28 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onDatasetDeleted(DataSet.Info info) {
+   void onDatasetDeleted(DataSetDAO.Info info) {
       log.debugf("Removing datasets and changes for dataset %d (%d/%d, test %d)", info.id, info.runId, info.ordinal, info.testId);
-      for (DataPoint dp : DataPoint.<DataPoint>list("dataset_id", info.id)) {
-         messageBus.publish(DataPoint.EVENT_DELETED, info.testId,
-                 new DataPoint.Event(dp, info.testId, false));
+      for (DataPointDAO dp : DataPointDAO.<DataPointDAO>list("dataset_id", info.id)) {
+         messageBus.publish(DataPointDAO.EVENT_DELETED, info.testId,
+                 new DataPointDAO.Event(dp, info.testId, false));
          dp.delete();
       }
-      for (Change c: Change.<Change>list("dataset_id = ?1 AND confirmed = false", info.id)) {
+      for (ChangeDAO c: ChangeDAO.<ChangeDAO>list("dataset_id = ?1 AND confirmed = false", info.id)) {
          c.delete();
       }
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onTestDeleted(Test test) {
+   void onTestDeleted(TestDAO test) {
       // We need to delete in a loop to cascade this to ChangeDetection
-      List<Variable> variables = Variable.list("testid", test.id);
+      List<VariableDAO> variables = VariableDAO.list("testid", test.id);
       log.debugf("Deleting %d variables for test %s (%d)", variables.size(), test.name, test.id);
       for (var variable: variables) {
          variable.delete();
       }
-      MissingDataRule.delete("test_id", test.id);
+      MissingDataRuleDAO.delete("test_id", test.id);
       em.flush();
    }
 
@@ -1354,7 +1354,7 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Scheduled(every = "{horreum.alerting.expected.run.check}")
    public void checkExpectedRuns() {
-      for (RunExpectation expectation : RunExpectation.<RunExpectation>find("expectedbefore < ?1", timeService.now()).list()) {
+      for (RunExpectationDAO expectation : RunExpectationDAO.<RunExpectationDAO>find("expectedbefore < ?1", timeService.now()).list()) {
          boolean sendNotifications = (Boolean) em.createNativeQuery("SELECT notificationsenabled FROM test WHERE id = ?")
                .setParameter(1, expectation.testId).getSingleResult();
          if (sendNotifications) {
@@ -1375,7 +1375,7 @@ public class AlertingServiceImpl implements AlertingService {
       int progress;
       boolean done;
       public int errors;
-      Map<Integer, DataSet.Info> datasetsWithoutValue = new HashMap<>();
+      Map<Integer, DataSetDAO.Info> datasetsWithoutValue = new HashMap<>();
    }
 
    static final class VarAndFingerprint {

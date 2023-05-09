@@ -7,11 +7,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
 
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-
-@Entity
-public class Banner {
+@Entity(name = "Banner")
+public class BannerDAO {
    @Id
    @GeneratedValue
    public Integer id;

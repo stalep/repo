@@ -18,7 +18,7 @@ import org.hibernate.annotations.Immutable;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
-@Entity
+@Entity(name = "MissingDataRuleResult")
 @Table(name = "missingdata_ruleresult")
 @Immutable
 public class MissingDataRuleResult extends PanacheEntityBase {
@@ -53,7 +53,7 @@ public class MissingDataRuleResult extends PanacheEntityBase {
 
    @ManyToOne(fetch = FetchType.LAZY)
    @JoinColumn(name = "rule_id", insertable = false, updatable = false)
-   public MissingDataRule rule;
+   public MissingDataRuleDAO rule;
 
    public MissingDataRuleResult() {}
 

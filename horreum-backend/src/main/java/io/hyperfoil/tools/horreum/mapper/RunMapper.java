@@ -2,14 +2,14 @@ package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.ValidationError;
 import io.hyperfoil.tools.horreum.api.data.ValidationErrorDTO;
-import io.hyperfoil.tools.horreum.entity.data.Run;
+import io.hyperfoil.tools.horreum.entity.data.RunDAO;
 import io.hyperfoil.tools.horreum.api.data.RunDTO;
 
 import java.util.stream.Collectors;
 
 public class RunMapper {
 
-    public static RunDTO from(Run run) {
+    public static RunDTO from(RunDAO run) {
         RunDTO dto = new RunDTO();
         dto.id = run.id;
         dto.start = run.start;
@@ -29,8 +29,8 @@ public class RunMapper {
         return dto;
     }
 
-    public static Run to(RunDTO dto) {
-       Run run = new Run();
+    public static RunDAO to(RunDTO dto) {
+       RunDAO run = new RunDAO();
        run.id = dto.id;
        run.start = dto.start;
        run.stop = dto.stop;

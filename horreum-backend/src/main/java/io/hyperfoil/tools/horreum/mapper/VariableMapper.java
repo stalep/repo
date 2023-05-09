@@ -1,23 +1,23 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetection;
+import io.hyperfoil.tools.horreum.entity.alerting.ChangeDetectionDAO;
 import io.hyperfoil.tools.horreum.api.alerting.ChangeDetectionDTO;
-import io.hyperfoil.tools.horreum.entity.alerting.Variable;
+import io.hyperfoil.tools.horreum.entity.alerting.VariableDAO;
 import io.hyperfoil.tools.horreum.api.alerting.VariableDTO;
 
 import java.util.stream.Collectors;
 
 public class VariableMapper {
 
-    public static VariableDTO from(Variable variable) {
+    public static VariableDTO from(VariableDAO variable) {
         return new VariableDTO(variable.id, variable.testId, variable.name, variable.group,
                 variable.order, variable.labels,
                 variable.changeDetection.stream().map(VariableMapper::fromChangeDetection).collect(Collectors.toSet())
         );
     }
 
-    public static Variable to(VariableDTO dto) {
-        Variable v = new Variable();
+    public static VariableDAO to(VariableDTO dto) {
+        VariableDAO v = new VariableDAO();
         v.id = dto.id;
         v.testId = dto.testId;
         v.name = dto.name;
@@ -30,12 +30,12 @@ public class VariableMapper {
         return v;
     }
 
-    public static ChangeDetectionDTO fromChangeDetection(ChangeDetection cd) {
+    public static ChangeDetectionDTO fromChangeDetection(ChangeDetectionDAO cd) {
         return new ChangeDetectionDTO(cd.id, cd.model, cd.config);
     }
 
-    public static ChangeDetection toChangeDetection(ChangeDetectionDTO dto) {
-       ChangeDetection cd = new ChangeDetection();
+    public static ChangeDetectionDAO toChangeDetection(ChangeDetectionDTO dto) {
+       ChangeDetectionDAO cd = new ChangeDetectionDAO();
        cd.id = dto.id;
        cd.model = dto.model;
        cd.config = dto.config;

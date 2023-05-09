@@ -39,7 +39,7 @@ import io.hyperfoil.tools.horreum.api.services.QueryResult;
 import io.hyperfoil.tools.horreum.api.services.SchemaService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
-import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;
+import io.hyperfoil.tools.horreum.entity.alerting.DatasetLogDAO;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.hyperfoil.tools.horreum.server.WithToken;
 import io.quarkus.runtime.Startup;
@@ -157,7 +157,7 @@ public class DatasetServiceImpl implements DatasetService {
    @PostConstruct
    void init() {
       sqlService.registerListener("calculate_labels", this::onLabelChanged);
-      messageBus.subscribe(DataSet.EVENT_NEW, "DatasetService", DataSet.EventNew.class, this::onNewDataset);
+      messageBus.subscribe(DataSetDAO.EVENT_NEW, "DatasetService", DataSetDAO.EventNew.class, this::onNewDataset);
    }
 
    @PermitAll
@@ -194,7 +194,7 @@ public class DatasetServiceImpl implements DatasetService {
       DatasetService.DatasetList list = new DatasetService.DatasetList();
       //noinspection unchecked
       list.datasets = query.getResultList();
-      list.total = DataSet.count("testid = ?1", testId);
+      list.total = DataSetDAO.count("testid = ?1", testId);
       return list;
    }
 
@@ -317,7 +317,7 @@ public class DatasetServiceImpl implements DatasetService {
    public LabelPreview previewLabel(int datasetId, LabelDTO label) {
       // This is executed with elevated permissions, but with the same as a normal label calculation would use
       // Therefore we need to explicitly check dataset ownership
-      DataSet dataset = DataSet.findById(datasetId);
+      DataSetDAO dataset = DataSetDAO.findById(datasetId);
       if (dataset == null || !Roles.hasRoleWithSuffix(identity, dataset.owner, "-tester")) {
          throw ServiceException.badRequest("Dataset not found or insufficient privileges.");
       }
@@ -373,7 +373,7 @@ public class DatasetServiceImpl implements DatasetService {
    @WithRoles
    @Override
    public DataSetDTO getDataSet(int datasetId) {
-      DataSet dataset = DataSet.findById(datasetId);
+      DataSetDAO dataset = DataSetDAO.findById(datasetId);
       if (dataset != null) {
          Hibernate.initialize(dataset.data);
       }
@@ -423,9 +423,9 @@ public class DatasetServiceImpl implements DatasetService {
       // before the first event is processed. The second event would then find the label_value
       // already present and would fail with a constraint violation.
       if (queryLabelId < 0) {
-         Label.Value.delete("datasetId", datasetId);
+         LabelDAO.Value.delete("datasetId", datasetId);
       } else {
-         Label.Value.delete("datasetId = ?1 AND labelId = ?2", datasetId, queryLabelId);
+         LabelDAO.Value.delete("datasetId = ?1 AND labelId = ?2", datasetId, queryLabelId);
       }
 
       Util.evaluateMany(extracted, row -> (String) row[2], row -> (JsonNode) row[3],
@@ -434,7 +434,7 @@ public class DatasetServiceImpl implements DatasetService {
             (row, e, jsCode) -> logMessage(datasetId, PersistentLog.ERROR,
                   "Evaluation of label %s failed: '%s' Code:<pre>%s</pre>", row[0], e.getMessage(), jsCode),
             out -> logMessage(datasetId, PersistentLog.DEBUG, "Output while calculating labels: <pre>%s</pre>", out));
-      messageBus.publish(DataSet.EVENT_LABELS_UPDATED, testId, new DataSet.LabelsUpdatedEvent(testId, datasetId, isRecalculation));
+      messageBus.publish(DataSetDAO.EVENT_LABELS_UPDATED, testId, new DataSetDAO.LabelsUpdatedEvent(testId, datasetId, isRecalculation));
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
@@ -460,7 +460,7 @@ public class DatasetServiceImpl implements DatasetService {
    }
 
    private void createLabel(int datasetId, int labelId, JsonNode value) {
-      Label.Value labelValue = new Label.Value();
+      LabelDAO.Value labelValue = new LabelDAO.Value();
       labelValue.datasetId = datasetId;
       labelValue.labelId = labelId;
       labelValue.value = value;
@@ -476,7 +476,7 @@ public class DatasetServiceImpl implements DatasetService {
       }
    }
 
-   public void onNewDataset(DataSet.EventNew event) {
+   public void onNewDataset(DataSetDAO.EventNew event) {
       withRecalculationLock(() -> calculateLabels(event.dataset.testid, event.dataset.id, -1, event.isRecalculation));
    }
 
@@ -490,6 +490,6 @@ public class DatasetServiceImpl implements DatasetService {
       String msg = String.format(message, params);
       int testId = (int) em.createNativeQuery("SELECT testid FROM dataset WHERE id = ?1").setParameter(1, datasetId).getSingleResult();
       log.tracef("Logging %s for test %d, dataset %d: %s", PersistentLog.logLevel(level), testId, datasetId, msg);
-      new DatasetLog(em.getReference(Test.class, testId), em.getReference(DataSet.class, datasetId), level, "labels", msg).persist();
+      new DatasetLogDAO(em.getReference(TestDAO.class, testId), em.getReference(DataSetDAO.class, datasetId), level, "labels", msg).persist();
    }
 }

@@ -1,13 +1,13 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.data.Transformer;
+import io.hyperfoil.tools.horreum.entity.data.TransformerDAO;
 import io.hyperfoil.tools.horreum.api.data.TransformerDTO;
 
 import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class TransformerMapper {
-    public static TransformerDTO from(Transformer t) {
+    public static TransformerDTO from(TransformerDAO t) {
         TransformerDTO dto = new TransformerDTO();
         dto.id = t.id;
         dto.name = t.name;
@@ -27,8 +27,8 @@ public class TransformerMapper {
         return dto;
     }
 
-    public static Transformer to(TransformerDTO dto) {
-        Transformer t = new Transformer();
+    public static TransformerDAO to(TransformerDTO dto) {
+        TransformerDAO t = new TransformerDAO();
         t.id = dto.id;
         t.name = dto.name;
         t.description = dto.description;

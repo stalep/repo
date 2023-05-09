@@ -7,7 +7,7 @@ import javax.ws.rs.core.HttpHeaders;
 
 import io.hyperfoil.tools.horreum.api.data.Access;
 import io.hyperfoil.tools.horreum.api.data.TestDTO;
-import io.hyperfoil.tools.horreum.entity.data.TestToken;
+import io.hyperfoil.tools.horreum.entity.data.TestTokenDAO;
 import io.hyperfoil.tools.horreum.server.TokenInterceptor;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
 import io.hyperfoil.tools.horreum.test.PostgresResource;
@@ -33,7 +33,7 @@ public class TokenAuthTest extends BaseServiceTest {
       // assert not accessible without auth
       given().get("/api/test/" + test.id).then().statusCode(404);
 
-      addToken(test, TestToken.READ, "foobar");
+      addToken(test, TestTokenDAO.READ, "foobar");
 
       given().get("/api/test/" + test.id).then().statusCode(404);
       given().get("/api/test/" + test.id + "?token=foobar").then().statusCode(200);

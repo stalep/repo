@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**
- * Security model: view components are owned by {@link io.hyperfoil.tools.horreum.entity.data.View} and this is owned by {@link Test}, therefore
+ * Security model: view components are owned by {@link ViewDAO} and this is owned by {@link TestDAO}, therefore
  * we don't have to retain ownership info.
  */
 @Entity(name = "viewcomponent")
@@ -51,7 +51,7 @@ public class ViewComponent extends PanacheEntityBase {
    @ManyToOne(fetch = FetchType.LAZY)
    @JsonIgnore
    @JoinColumn(name = "view_id")
-   public View view;
+   public ViewDAO view;
 
    /**
     * In UI, headers are displayed based on {@link #headerOrder} and then {@link #headerName}.

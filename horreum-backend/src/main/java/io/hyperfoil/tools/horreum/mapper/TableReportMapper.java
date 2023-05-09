@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.report.TableReport;
+import io.hyperfoil.tools.horreum.entity.report.TableReportDAO;
 import io.hyperfoil.tools.horreum.entity.report.TableReportConfig;
 import io.hyperfoil.tools.horreum.api.report.TableReportConfigDTO;
 import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
@@ -8,7 +8,7 @@ import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
 import java.util.stream.Collectors;
 
 public class TableReportMapper {
-    public static TableReportDTO from(TableReport tr) {
+    public static TableReportDTO from(TableReportDAO tr) {
        TableReportDTO dto = new TableReportDTO();
        dto.id = tr.id;
        dto.config = fromTableReportConfig(tr.config);
@@ -46,7 +46,7 @@ public class TableReportMapper {
         return dto;
     }
 
-    public static TableReportDTO.DataDTO fromData(TableReport.Data trd) {
+    public static TableReportDTO.DataDTO fromData(TableReportDAO.Data trd) {
         TableReportDTO.DataDTO dto = new TableReportDTO.DataDTO();
         dto.datasetId = trd.datasetId;
         dto.runId = trd.runId;

@@ -1,10 +1,10 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.report.ReportComponent;
+import io.hyperfoil.tools.horreum.entity.report.ReportComponentDAO;
 import io.hyperfoil.tools.horreum.api.report.ReportComponentDTO;
 
 public class ReportComponentMapper {
-    public static ReportComponentDTO from(ReportComponent rc) {
+    public static ReportComponentDTO from(ReportComponentDAO rc) {
         ReportComponentDTO dto = new ReportComponentDTO();
         dto.id = rc.id;
         dto.name = rc.name;
@@ -17,8 +17,8 @@ public class ReportComponentMapper {
         return dto;
     }
 
-    public static ReportComponent to(ReportComponentDTO dto) {
-        ReportComponent rc = new ReportComponent();
+    public static ReportComponentDAO to(ReportComponentDTO dto) {
+        ReportComponentDAO rc = new ReportComponentDAO();
         rc.id = dto.id;
         rc.name = dto.name;
         rc.function = dto.function;

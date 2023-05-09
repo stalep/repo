@@ -132,7 +132,7 @@ public class SchemaServiceImpl implements SchemaService {
    @PermitAll
    @Override
    public SchemaDTO getSchema(int id, String token){
-      Schema schema = Schema.find("id", id).firstResult();
+      SchemaDAO schema = SchemaDAO.find("id", id).firstResult();
       if (schema == null) {
          throw ServiceException.notFound("Schema not found");
       }
@@ -156,11 +156,11 @@ public class SchemaServiceImpl implements SchemaService {
       if (schemaDTO.uri == null || Arrays.stream(ALL_URNS).noneMatch(scheme -> schemaDTO.uri.startsWith(scheme + ":"))) {
          throw ServiceException.badRequest("Please use URI starting with one of these schemes: " + Arrays.toString(ALL_URNS));
       }
-      Schema byName = Schema.find("name", schemaDTO.name).firstResult();
+      SchemaDAO byName = SchemaDAO.find("name", schemaDTO.name).firstResult();
       if (byName != null && !Objects.equals(byName.id, schemaDTO.id)) {
          throw ServiceException.serverError("Name already used");
       }
-      Schema byUri = Schema.find("uri", schemaDTO.uri).firstResult();
+      SchemaDAO byUri = SchemaDAO.find("uri", schemaDTO.uri).firstResult();
       if (byUri != null && !Objects.equals(byUri.id, schemaDTO.id)) {
          throw ServiceException.serverError("URI already used");
       }
@@ -168,8 +168,8 @@ public class SchemaServiceImpl implements SchemaService {
       if (schemaDTO.schema != null && schemaDTO.schema.isEmpty()) {
          schemaDTO.schema = null;
       }
-      Schema returnSchema = null;
-      Schema schema = SchemaMapper.to(schemaDTO);
+      SchemaDAO returnSchema = null;
+      SchemaDAO schema = SchemaMapper.to(schemaDTO);
       if (schemaDTO.id != null) {
          //this is a hack as Horreum is currently passing managed `Entities` over rest API, and .merge() is being called for unmanaged entities
          //TODO:: revert when https://github.com/Hyperfoil/Horreum/issues/343 is fixed
@@ -192,10 +192,10 @@ public class SchemaServiceImpl implements SchemaService {
       }
       Sort.Direction sortDirection = direction == null ? null : Sort.Direction.valueOf(direction.name());
       if (limit != null && page != null) {
-         List<Schema> schemas = Schema.findAll(Sort.by(sort).direction(sortDirection)).page(Page.of(page, limit)).list();
+         List<SchemaDAO> schemas = SchemaDAO.findAll(Sort.by(sort).direction(sortDirection)).page(Page.of(page, limit)).list();
          return schemas.stream().map(SchemaMapper::from).collect(Collectors.toList());
       } else {
-         List<Schema> schemas = Schema.listAll(Sort.by(sort).direction(sortDirection));
+         List<SchemaDAO> schemas = SchemaDAO.listAll(Sort.by(sort).direction(sortDirection));
          return schemas.stream().map(SchemaMapper::from).collect(Collectors.toList());
       }
    }
@@ -272,7 +272,7 @@ public class SchemaServiceImpl implements SchemaService {
    @Transactional
    void validateRunData(int runId, Predicate<String> schemaFilter) {
       log.debugf("About to validate data for run %d", runId);
-      Run run = Run.findById(runId);
+      RunDAO run = RunDAO.findById(runId);
       if (run == null) {
          log.errorf("Cannot load run %d for schema validation", runId);
          return;
@@ -283,7 +283,7 @@ public class SchemaServiceImpl implements SchemaService {
          validateData(run.metadata, schemaFilter, run.validationErrors::add);
       }
       run.persist();
-      messageBus.publish(Run.EVENT_VALIDATED, run.testid, new Schema.ValidationEvent(run.id, run.validationErrors));
+      messageBus.publish(RunDAO.EVENT_VALIDATED, run.testid, new SchemaDAO.ValidationEvent(run.id, run.validationErrors));
    }
 
    private void validateDatasetData(String params) {
@@ -295,7 +295,7 @@ public class SchemaServiceImpl implements SchemaService {
    @Transactional
    void validateDatasetData(int datasetId, Predicate<String> schemaFilter) {
       log.debugf("About to validate data for dataset %d", datasetId);
-      DataSet dataset = DataSet.findById(datasetId);
+      DataSetDAO dataset = DataSetDAO.findById(datasetId);
       if (dataset == null) {
          // Don't log error when the dataset is not present and we're revalidating all datasets - it might be
          // concurrently removed because of URI change
@@ -315,7 +315,7 @@ public class SchemaServiceImpl implements SchemaService {
          }
       }
       dataset.persist();
-      messageBus.publish(DataSet.EVENT_VALIDATED, dataset.testid, new Schema.ValidationEvent(dataset.id, dataset.validationErrors));
+      messageBus.publish(DataSetDAO.EVENT_VALIDATED, dataset.testid, new SchemaDAO.ValidationEvent(dataset.id, dataset.validationErrors));
    }
 
    private void revalidateAll(String params) {
@@ -327,7 +327,7 @@ public class SchemaServiceImpl implements SchemaService {
    @Transactional
    @TransactionConfiguration(timeout = 3600) // 1 hour, this may run a long time
    void revalidateAll(int schemaId) {
-      Schema schema = Schema.findById(schemaId);
+      SchemaDAO schema = SchemaDAO.findById(schemaId);
       if (schema == null) {
          log.errorf("Cannot load schema %d for validation", schemaId);
          return;
@@ -358,14 +358,14 @@ public class SchemaServiceImpl implements SchemaService {
          if (filter != null && !filter.test(schemaUri)) {
             continue;
          }
-         Query fetchSchemas = em.createNativeQuery(FETCH_SCHEMAS_RECURSIVE, Schema.class);
+         Query fetchSchemas = em.createNativeQuery(FETCH_SCHEMAS_RECURSIVE, SchemaDAO.class);
          fetchSchemas.setParameter(1, schemaUri);
          @SuppressWarnings("unchecked")
-         Map<String, Schema> schemas = ((Stream<Schema>) fetchSchemas.getResultStream())
+         Map<String, SchemaDAO> schemas = ((Stream<SchemaDAO>) fetchSchemas.getResultStream())
                .collect(Collectors.toMap(s -> s.uri, Function.identity()));
 
          // this is root in the sense of JSON schema referencing other schemas, NOT Horreum first-level schema
-         Schema rootSchema = schemas.get(schemaUri);
+         SchemaDAO rootSchema = schemas.get(schemaUri);
          if (rootSchema == null || rootSchema.schema == null) {
             continue;
          }
@@ -411,19 +411,19 @@ public class SchemaServiceImpl implements SchemaService {
    @Transactional
    @Override
    public void delete(int id){
-      Schema schema = Schema.find("id", id).firstResult();
+      SchemaDAO schema = SchemaDAO.find("id", id).firstResult();
       if (schema == null) {
          throw ServiceException.notFound("Schema not found");
       } else {
          log.debugf("Deleting schema %s (%d), URI %s", schema.name, schema.id, schema.uri);
          em.createNativeQuery("DELETE FROM label_extractors WHERE label_id IN (SELECT id FROM label WHERE schema_id = ?1)")
                .setParameter(1, id).executeUpdate();
-         Label.delete("schema_id", id);
+         LabelDAO.delete("schema_id", id);
          em.createNativeQuery("DELETE FROM transformer_extractors WHERE transformer_id IN (SELECT id FROM transformer WHERE schema_id = ?1)")
                .setParameter(1, id).executeUpdate();
          em.createNativeQuery("DELETE FROM test_transformers WHERE transformer_id IN (SELECT id FROM transformer WHERE schema_id = ?1)")
                .setParameter(1, id).executeUpdate();
-         Transformer.delete("schema_id", id);
+         TransformerDAO.delete("schema_id", id);
          schema.delete();
       }
    }
@@ -494,7 +494,7 @@ public class SchemaServiceImpl implements SchemaService {
    @WithRoles
    @Override
    public List<TransformerDTO> listTransformers(int schemaId) {
-      List<Transformer> transformers = Transformer.find("schema_id", Sort.by("name"), schemaId).list();
+      List<TransformerDAO> transformers = TransformerDAO.find("schema_id", Sort.by("name"), schemaId).list();
       return transformers.stream().map(TransformerMapper::from).collect(Collectors.toList());
    }
 
@@ -514,13 +514,13 @@ public class SchemaServiceImpl implements SchemaService {
          throw ServiceException.badRequest("Transformer must have a name!");
       }
       validateExtractors(transformerDTO.extractors);
-      Transformer transformer = TransformerMapper.to(transformerDTO);
+      TransformerDAO transformer = TransformerMapper.to(transformerDTO);
       if (transformer.id == null || transformer.id < 0) {
          transformer.id = null;
-         transformer.schema = em.getReference(Schema.class, schemaId);
+         transformer.schema = em.getReference(SchemaDAO.class, schemaId);
          transformer.persistAndFlush();
       } else {
-         Transformer existing = Transformer.findById(transformer.id);
+         TransformerDAO existing = TransformerDAO.findById(transformer.id);
          if (!Objects.equals(existing.schema.id, schemaId)) {
             throw ServiceException.badRequest("Transformer id=" + transformer.id + ", name=" + existing.name +
                   " belongs to a different schema: " + existing.schema.id + "(" + existing.schema.uri + ")");
@@ -556,7 +556,7 @@ public class SchemaServiceImpl implements SchemaService {
    @Transactional
    @Override
    public void deleteTransformer(int schemaId, int transformerId) {
-      Transformer t = Transformer.findById(transformerId);
+      TransformerDAO t = TransformerDAO.findById(transformerId);
       if (t == null) {
          throw ServiceException.notFound("Transformer " + transformerId + " not found");
       }
@@ -584,7 +584,7 @@ public class SchemaServiceImpl implements SchemaService {
    @WithRoles
    @Override
    public List<LabelDTO> labels(int schemaId) {
-      List<Label> labels = Label.find("schema_id", schemaId).list();
+      List<LabelDAO> labels = LabelDAO.find("schema_id", schemaId).list();
       return labels.stream().map(LabelMapper::from).collect(Collectors.toList());
    }
 
@@ -603,14 +603,14 @@ public class SchemaServiceImpl implements SchemaService {
       }
       validateExtractors(labelDTO.extractors);
 
-      Label label = LabelMapper.to(labelDTO);
+      LabelDAO label = LabelMapper.to(labelDTO);
       if (label.id == null || label.id < 0) {
          label.id = null;
-         label.schema = em.getReference(Schema.class, schemaId);
+         label.schema = em.getReference(SchemaDAO.class, schemaId);
          checkSameName(label);
          label.persistAndFlush();
       } else {
-         Label existing = Label.findById(label.id);
+         LabelDAO existing = LabelDAO.findById(label.id);
          if (existing == null) {
             label.id = -1;
             existing = label;
@@ -638,8 +638,8 @@ public class SchemaServiceImpl implements SchemaService {
       return label.id;
    }
 
-   private void checkSameName(Label label) {
-      Label sameName = Label.find("schema = ?1 AND name = ?2", label.schema, label.name).firstResult();
+   private void checkSameName(LabelDAO label) {
+      LabelDAO sameName = LabelDAO.find("schema = ?1 AND name = ?2", label.schema, label.name).firstResult();
       if (sameName != null) {
          throw ServiceException.badRequest("There is an existing label with the same name (" + label.name + ") in this schema; please choose different name.");
       }
@@ -649,7 +649,7 @@ public class SchemaServiceImpl implements SchemaService {
    @Transactional
    @Override
    public void deleteLabel(int schemaId, int labelId) {
-      Label label = Label.findById(labelId);
+      LabelDAO label = LabelDAO.findById(labelId);
       if (label == null) {
          throw ServiceException.notFound("Label " + labelId + " not found");
       }
@@ -714,13 +714,13 @@ public class SchemaServiceImpl implements SchemaService {
    @Transactional
    @Override
    public JsonNode exportSchema(int id) {
-      Schema schema = Schema.findById(id);
+      SchemaDAO schema = SchemaDAO.findById(id);
       if (schema == null) {
          throw ServiceException.notFound("Schema not found");
       }
       ObjectNode exported = Util.OBJECT_MAPPER.valueToTree(schema);
-      exported.set("labels", Util.OBJECT_MAPPER.valueToTree(Label.list("schema", schema)));
-      exported.set("transformers", Util.OBJECT_MAPPER.valueToTree(Transformer.list("schema", schema)));
+      exported.set("labels", Util.OBJECT_MAPPER.valueToTree(LabelDAO.list("schema", schema)));
+      exported.set("transformers", Util.OBJECT_MAPPER.valueToTree(TransformerDAO.list("schema", schema)));
       return exported;
    }
 
@@ -736,7 +736,7 @@ public class SchemaServiceImpl implements SchemaService {
       ObjectNode cfg = config.deepCopy();
       JsonNode labels = cfg.remove("labels");
       JsonNode transformers = cfg.remove("transformers");
-      Schema schema;
+      SchemaDAO schema;
       try {
          schema = SchemaMapper.to(Util.OBJECT_MAPPER.treeToValue(cfg, SchemaDTO.class));
       } catch (JsonProcessingException e) {
@@ -748,7 +748,7 @@ public class SchemaServiceImpl implements SchemaService {
       } else if (labels.isArray()) {
          for (JsonNode node : labels) {
             try {
-               Label label = LabelMapper.to(Util.OBJECT_MAPPER.treeToValue(node, LabelDTO.class));
+               LabelDAO label = LabelMapper.to(Util.OBJECT_MAPPER.treeToValue(node, LabelDTO.class));
                label.schema = schema;
                em.merge(label);
             } catch (JsonProcessingException e) {
@@ -763,7 +763,7 @@ public class SchemaServiceImpl implements SchemaService {
       } else if (transformers.isArray()) {
          for (JsonNode node : transformers) {
             try {
-               Transformer transformer = TransformerMapper.to(Util.OBJECT_MAPPER.treeToValue(node, TransformerDTO.class));
+               TransformerDAO transformer = TransformerMapper.to(Util.OBJECT_MAPPER.treeToValue(node, TransformerDTO.class));
                transformer.schema = schema;
                em.merge(transformer);
             } catch (JsonProcessingException e) {

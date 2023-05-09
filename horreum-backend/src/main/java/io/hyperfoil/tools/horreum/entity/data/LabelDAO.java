@@ -31,7 +31,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @Entity(name="label")
 @RegisterForReflection
-public class Label extends OwnedEntityBase {
+public class LabelDAO extends OwnedEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -51,7 +51,7 @@ public class Label extends OwnedEntityBase {
    @ManyToOne(optional = false)
    @JoinColumn(name = "schema_id")
    @JsonIgnore
-   public Schema schema;
+   public SchemaDAO schema;
 
    @NotNull
    @ElementCollection(fetch = FetchType.EAGER)
@@ -73,7 +73,7 @@ public class Label extends OwnedEntityBase {
 
    @JsonProperty("schemaId")
    public void setSchema(int schemaId) {
-      schema = getEntityManager().getReference(Schema.class, schemaId);
+      schema = getEntityManager().getReference(SchemaDAO.class, schemaId);
    }
 
    @Entity

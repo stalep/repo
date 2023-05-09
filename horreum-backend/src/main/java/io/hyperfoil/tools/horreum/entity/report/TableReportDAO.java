@@ -30,9 +30,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
-@Entity
+@Entity(name = "TableReport")
 @Table(name = "tablereport")
-public class TableReport extends PanacheEntityBase {
+public class TableReportDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GeneratedValue
@@ -50,7 +50,7 @@ public class TableReport extends PanacheEntityBase {
    @NotNull
    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER, mappedBy = "report")
    @Fetch(FetchMode.SELECT)
-   public Collection<ReportComment> comments;
+   public Collection<ReportCommentDAO> comments;
 
    @NotNull
    @ElementCollection(fetch = FetchType.EAGER)
@@ -61,7 +61,7 @@ public class TableReport extends PanacheEntityBase {
    @NotNull
    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER, mappedBy = "report")
    @Fetch(FetchMode.SELECT)
-   public Collection<ReportLog> logs = new ArrayList<>();
+   public Collection<ReportLogDAO> logs = new ArrayList<>();
 
    @Schema(name = "TableReportData")
    @Embeddable

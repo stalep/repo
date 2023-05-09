@@ -12,8 +12,8 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.NotNull;
 
-import io.hyperfoil.tools.horreum.entity.data.Label;
-import io.hyperfoil.tools.horreum.entity.data.Run;
+import io.hyperfoil.tools.horreum.entity.data.LabelDAO;
+import io.hyperfoil.tools.horreum.entity.data.RunDAO;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
@@ -28,13 +28,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**
- * Variable emits a single value from the {@link Run#data}
- * using {@link Label labels} and
+ * Variable emits a single value from the {@link RunDAO#data}
+ * using {@link LabelDAO labels} and
  * JavaScript code in {@link #calculation} (calculation is not necessary if there's a single accessor).
  *
  */
 @Entity(name = "variable")
-public class Variable extends PanacheEntityBase {
+public class VariableDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -68,9 +68,9 @@ public class Variable extends PanacheEntityBase {
    @JsonInclude(Include.NON_NULL)
    public String calculation;
 
-   @Schema(required = true, implementation = ChangeDetection[].class)
+   @Schema(required = true, implementation = ChangeDetectionDAO[].class)
    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "variable")
-   public Set<ChangeDetection> changeDetection;
+   public Set<ChangeDetectionDAO> changeDetection;
 
    @Override
    public String toString() {

@@ -18,7 +18,7 @@ import io.hyperfoil.tools.horreum.api.services.BannerService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import io.hyperfoil.tools.horreum.entity.Banner;
+import io.hyperfoil.tools.horreum.entity.BannerDAO;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
@@ -43,8 +43,8 @@ public class BannerServiceImpl implements BannerService {
    @Transactional
    @Override
    public void set(BannerDTO dto) {
-      Banner banner = BannerMapper.to(dto);
-      Banner previous = getBanner();
+      BannerDAO banner = BannerMapper.to(dto);
+      BannerDAO previous = getBanner();
       if (previous != null) {
          previous.active = false;
          em.merge(previous);
@@ -73,9 +73,9 @@ public class BannerServiceImpl implements BannerService {
      return BannerMapper.from(getBanner());
    }
 
-   private Banner getBanner() {
+   private BannerDAO getBanner() {
       @SuppressWarnings("unchecked")
-      List<Banner> banners = em.createQuery("SELECT b FROM Banner b WHERE active IS TRUE ORDER BY created DESC").setMaxResults(1).getResultList();
+      List<BannerDAO> banners = em.createQuery("SELECT b FROM Banner b WHERE active IS TRUE ORDER BY created DESC").setMaxResults(1).getResultList();
       return banners != null && !banners.isEmpty() ? banners.get(0) : null;
    }
 }

@@ -11,13 +11,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.data.Schema;
+import io.hyperfoil.tools.horreum.entity.data.SchemaDAO;
 
 @Embeddable
 public class ValidationError {
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @JsonIgnore
-   public Schema schema;
+   public SchemaDAO schema;
 
    @NotNull
    @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
@@ -25,7 +25,7 @@ public class ValidationError {
 
    @JsonProperty(value = "schemaId", required = true)
    public void setSchema(int id) {
-      schema = Schema.getEntityManager().getReference(Schema.class, id);
+      schema = SchemaDAO.getEntityManager().getReference(SchemaDAO.class, id);
    }
 
    @JsonProperty(value = "schemaId", required = true)

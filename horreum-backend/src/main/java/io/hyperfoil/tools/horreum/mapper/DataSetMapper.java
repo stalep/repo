@@ -1,12 +1,12 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
 import io.hyperfoil.tools.horreum.api.data.DataSetDTO;
-import io.hyperfoil.tools.horreum.entity.data.Run;
+import io.hyperfoil.tools.horreum.entity.data.RunDAO;
 
 public class DataSetMapper {
 
-    public static DataSetDTO from(DataSet ds) {
+    public static DataSetDTO from(DataSetDAO ds) {
 
         DataSetDTO dto = new DataSetDTO();
         dto.id = ds.id;
@@ -23,17 +23,17 @@ public class DataSetMapper {
         return dto;
     }
 
-    public static DataSet to(DataSetDTO dto, Run run) {
-        DataSet ds = new DataSet(run, dto.ordinal, dto.description, dto.data);
+    public static DataSetDAO to(DataSetDTO dto, RunDAO run) {
+        DataSetDAO ds = new DataSetDAO(run, dto.ordinal, dto.description, dto.data);
         ds.id = dto.id;
         return ds;
     }
 
-    public static DataSetDTO.Info fromInfo(DataSet.Info info) {
+    public static DataSetDTO.Info fromInfo(DataSetDAO.Info info) {
         return new DataSetDTO.Info(info.id, info.runId, info.ordinal, info.testId);
     }
 
-    public static DataSet.Info toInfo(DataSetDTO.Info info) {
-        return new DataSet.Info(info.id, info.runId, info.ordinal, info.testId);
+    public static DataSetDAO.Info toInfo(DataSetDTO.Info info) {
+        return new DataSetDAO.Info(info.id, info.runId, info.ordinal, info.testId);
     }
 }

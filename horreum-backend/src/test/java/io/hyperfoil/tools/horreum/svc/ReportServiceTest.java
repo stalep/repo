@@ -20,7 +20,7 @@ import io.hyperfoil.tools.horreum.api.report.ReportCommentDTO;
 import io.hyperfoil.tools.horreum.api.report.ReportComponentDTO;
 import io.hyperfoil.tools.horreum.api.report.TableReportConfigDTO;
 import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
 import io.hyperfoil.tools.horreum.api.data.ExtractorDTO;
 import io.hyperfoil.tools.horreum.api.data.SchemaDTO;
 import io.hyperfoil.tools.horreum.api.data.TestDTO;
@@ -144,7 +144,7 @@ public class ReportServiceTest extends BaseServiceTest {
    }
 
    private void uploadExampleRuns(TestDTO test) throws InterruptedException {
-      BlockingQueue<DataSet.LabelsUpdatedEvent> queue = eventConsumerQueue(DataSet.LabelsUpdatedEvent.class, DataSet.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
+      BlockingQueue<DataSetDAO.LabelsUpdatedEvent> queue = eventConsumerQueue(DataSetDAO.LabelsUpdatedEvent.class, DataSetDAO.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
 
       long ts = System.currentTimeMillis();
       uploadRun(ts - 1, createRunData("production", "windows", "jvm", 1, 0.5, 150_000_000, 123) , test.name);
@@ -211,7 +211,7 @@ public class ReportServiceTest extends BaseServiceTest {
       TestDTO test = createTest(createExampleTest("missing"));
       createComparisonSchema();
 
-      BlockingQueue<DataSet.LabelsUpdatedEvent> queue = eventConsumerQueue(DataSet.LabelsUpdatedEvent.class, DataSet.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
+      BlockingQueue<DataSetDAO.LabelsUpdatedEvent> queue = eventConsumerQueue(DataSetDAO.LabelsUpdatedEvent.class, DataSetDAO.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
       int runId = uploadRun(JsonNodeFactory.instance.objectNode(), test.name);
       assertNotNull(queue.poll(10, TimeUnit.SECONDS));
 

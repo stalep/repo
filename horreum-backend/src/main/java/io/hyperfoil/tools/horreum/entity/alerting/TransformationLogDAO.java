@@ -12,27 +12,27 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
-import io.hyperfoil.tools.horreum.entity.data.Run;
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.RunDAO;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 
-@Entity
-public class TransformationLog extends PersistentLog {
+@Entity(name = "TransformationLog")
+public class TransformationLogDAO extends PersistentLog {
 
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @JoinColumn(name = "testid", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
    @JsonIgnore
-   public Test test;
+   public TestDAO test;
 
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @JoinColumn(name = "runid", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
    @JsonIgnore
-   public Run run;
+   public RunDAO run;
 
-   public TransformationLog() {
+   public TransformationLogDAO() {
       super(0, null);
    }
 
-   public TransformationLog(Test test, Run run, int level, String message) {
+   public TransformationLogDAO(TestDAO test, RunDAO run, int level, String message) {
       super(level, message);
       this.test = test;
       this.run = run;

@@ -19,7 +19,7 @@ import org.hibernate.annotations.Type;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 // Hyperfoil will sort runs that match the admittance filter (by default all)
@@ -40,7 +40,7 @@ public class TableReportConfig extends PanacheEntityBase {
    // This column gets `null` when the test is deleted
    @ManyToOne(fetch = FetchType.EAGER)
    @JoinColumn(name = "testid")
-   public Test test;
+   public TestDAO test;
 
    @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
    public ArrayNode filterLabels;
@@ -68,11 +68,11 @@ public class TableReportConfig extends PanacheEntityBase {
    @NotNull
    @OneToMany(mappedBy = "report", orphanRemoval = true, cascade = CascadeType.ALL)
    @OrderBy("order ASC")
-   public List<ReportComponent> components;
+   public List<ReportComponentDAO> components;
 
    public void ensureLinked() {
       if (components != null) {
-         for (ReportComponent c : components) {
+         for (ReportComponentDAO c : components) {
             c.report = this;
          }
       }

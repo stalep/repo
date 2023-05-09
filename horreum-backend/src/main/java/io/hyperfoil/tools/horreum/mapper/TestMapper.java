@@ -1,14 +1,14 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.hyperfoil.tools.horreum.api.data.TestDTO;
-import io.hyperfoil.tools.horreum.entity.data.TestToken;
+import io.hyperfoil.tools.horreum.entity.data.TestTokenDAO;
 import io.hyperfoil.tools.horreum.api.data.TestTokenDTO;
 
 import java.util.stream.Collectors;
 
 public class TestMapper {
-    public static TestDTO from(Test t) {
+    public static TestDTO from(TestDAO t) {
         TestDTO dto = new TestDTO();
         dto.id = t.id;
         dto.name = t.name;
@@ -32,7 +32,7 @@ public class TestMapper {
         return dto;
     }
 
-    public static TestTokenDTO fromTestToken(TestToken tt) {
+    public static TestTokenDTO fromTestToken(TestTokenDAO tt) {
         TestTokenDTO dto = new TestTokenDTO();
         dto.id = tt.id;
         dto.description = tt.description;
@@ -44,8 +44,8 @@ public class TestMapper {
         return dto;
     }
 
-    public static Test to(TestDTO dto) {
-        Test t = new Test();
+    public static TestDAO to(TestDTO dto) {
+        TestDAO t = new TestDAO();
         t.id = dto.id;
         t.name = dto.name;
         t.folder = dto.folder;
@@ -68,8 +68,8 @@ public class TestMapper {
         return t;
     }
 
-    private static TestToken toTestToken(TestTokenDTO dto, Test t) {
-        TestToken tt = new TestToken();
+    private static TestTokenDAO toTestToken(TestTokenDTO dto, TestDAO t) {
+        TestTokenDAO tt = new TestTokenDAO();
         tt.id = dto.id;
         tt.description = dto.description;
         tt.setValue(dto.getValue());

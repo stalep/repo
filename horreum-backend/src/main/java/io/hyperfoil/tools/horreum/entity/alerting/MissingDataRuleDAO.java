@@ -24,15 +24,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 // If the test has no dataset matching the rule uploaded for more than this duration (in ms)
 // we send a notification about missing regular upload. If the value is non-positive
 // no notifications are emitted.
-@Entity
+@Entity(name = "MissingDataRule")
 @Table(name = "missingdata_rule")
-public class MissingDataRule extends PanacheEntityBase {
+public class MissingDataRuleDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -51,7 +51,7 @@ public class MissingDataRule extends PanacheEntityBase {
    @ManyToOne(optional = false)
    @JoinColumn(name = "test_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
    @JsonIgnore
-   public Test test;
+   public TestDAO test;
 
    @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
    public ArrayNode labels;
@@ -71,14 +71,14 @@ public class MissingDataRule extends PanacheEntityBase {
 
    @JsonProperty(value = "testId", required = true)
    public void setTestId(int testId) {
-      this.test = Test.getEntityManager().getReference(Test.class, testId);
+      this.test = TestDAO.getEntityManager().getReference(TestDAO.class, testId);
    }
 
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-      MissingDataRule that = (MissingDataRule) o;
+      MissingDataRuleDAO that = (MissingDataRuleDAO) o;
       return maxStaleness == that.maxStaleness && Objects.equals(labels, that.labels) && Objects.equals(condition, that.condition);
    }
 

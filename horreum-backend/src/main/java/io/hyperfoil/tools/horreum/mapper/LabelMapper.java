@@ -1,13 +1,13 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.data.Label;
+import io.hyperfoil.tools.horreum.entity.data.LabelDAO;
 import io.hyperfoil.tools.horreum.api.data.LabelDTO;
-import io.hyperfoil.tools.horreum.entity.data.Schema;
+import io.hyperfoil.tools.horreum.entity.data.SchemaDAO;
 
 import java.util.stream.Collectors;
 
 public class LabelMapper {
-    public static LabelDTO from(Label l) {
+    public static LabelDTO from(LabelDAO l) {
         LabelDTO dto = new LabelDTO();
         dto.id = l.id;
         dto.name = l.name;
@@ -22,8 +22,8 @@ public class LabelMapper {
         return dto;
     }
 
-    public static Label to(LabelDTO dto) {
-        Label l = new Label();
+    public static LabelDAO to(LabelDTO dto) {
+        LabelDAO l = new LabelDAO();
         l.id = dto.id;
         l.name = dto.name;
         l.function = dto.function;
@@ -32,13 +32,13 @@ public class LabelMapper {
         l.owner = dto.owner;
         l.access = dto.access;
         if(dto.schemaId > 0)
-            l.schema = Schema.getEntityManager().find(Schema.class, dto.schemaId);
+            l.schema = SchemaDAO.getEntityManager().find(SchemaDAO.class, dto.schemaId);
         l.extractors = dto.extractors.stream().map(ExtractorMapper::to).collect(Collectors.toList());
 
         return l;
     }
 
-    public static LabelDTO.Value fromValue(Label.Value v) {
+    public static LabelDTO.Value fromValue(LabelDAO.Value v) {
         LabelDTO.Value dto = new LabelDTO.Value();
         dto.labelId = v.labelId;
         dto.value = v.value;

@@ -17,9 +17,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.hyperfoil.tools.horreum.api.services.GrafanaService;
-import io.hyperfoil.tools.horreum.entity.alerting.Change;
-import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
-import io.hyperfoil.tools.horreum.entity.alerting.Variable;
+import io.hyperfoil.tools.horreum.entity.alerting.ChangeDAO;
+import io.hyperfoil.tools.horreum.entity.alerting.DataPointDAO;
+import io.hyperfoil.tools.horreum.entity.alerting.VariableDAO;
 import io.hyperfoil.tools.horreum.api.grafana.Target;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 
@@ -61,7 +61,7 @@ public class GrafanaServiceImpl implements GrafanaService {
    @WithRoles
    @Override
    public String[] search(Target query) {
-      return Variable.<Variable>listAll().stream().map(v -> String.valueOf(v.id)).toArray(String[]::new);
+      return VariableDAO.<VariableDAO>listAll().stream().map(v -> String.valueOf(v.id)).toArray(String[]::new);
    }
 
    @WithRoles
@@ -88,7 +88,7 @@ public class GrafanaServiceImpl implements GrafanaService {
          if (variableId < 0) {
             throw ServiceException.badRequest("Target must be variable ID");
          }
-         Variable variable = Variable.findById(variableId);
+         VariableDAO variable = VariableDAO.findById(variableId);
          String variableName = String.valueOf(variableId);
          if (variable != null) {
             variableName = variable.name;
@@ -109,7 +109,7 @@ public class GrafanaServiceImpl implements GrafanaService {
             sql.append("LEFT JOIN fingerprint fp ON fp.dataset_id = dp.dataset_id WHERE json_equals(fp.fingerprint, (?4)::::jsonb) ");
          }
          sql.append("ORDER BY timestamp ASC");
-         javax.persistence.Query nativeQuery = em.createNativeQuery(sql.toString(), DataPoint.class)
+         javax.persistence.Query nativeQuery = em.createNativeQuery(sql.toString(), DataPointDAO.class)
                .setParameter(1, variableId)
                .setParameter(2, query.range.from)
                .setParameter(3, query.range.to);
@@ -117,8 +117,8 @@ public class GrafanaServiceImpl implements GrafanaService {
             nativeQuery.setParameter(4, fingerprint.toString());
          }
          @SuppressWarnings("unchecked")
-         List<DataPoint> datapoints = nativeQuery.getResultList();
-         for (DataPoint dp : datapoints) {
+         List<DataPointDAO> datapoints = nativeQuery.getResultList();
+         for (DataPointDAO dp : datapoints) {
             tt.datapoints.add(new Number[] { dp.value, dp.timestamp.toEpochMilli(), /* non-standard! */ dp.dataset.id });
          }
       }
@@ -180,7 +180,7 @@ public class GrafanaServiceImpl implements GrafanaService {
       if (fingerprint != null) {
          sql.append("AND json_equals(fp.fingerprint, (?4)::::jsonb)");
       }
-      javax.persistence.Query nativeQuery = em.createNativeQuery(sql.toString(), Change.class)
+      javax.persistence.Query nativeQuery = em.createNativeQuery(sql.toString(), ChangeDAO.class)
             .setParameter(1, variableId)
             .setParameter(2, query.range.from)
             .setParameter(3, query.range.to);
@@ -189,14 +189,14 @@ public class GrafanaServiceImpl implements GrafanaService {
       }
 
       @SuppressWarnings("unchecked")
-      List<Change> changes = nativeQuery.getResultList();
-      for (Change change : changes) {
+      List<ChangeDAO> changes = nativeQuery.getResultList();
+      for (ChangeDAO change : changes) {
          annotations.add(createAnnotation(change));
       }
       return annotations;
    }
 
-   private AnnotationDefinition createAnnotation(Change change) {
+   private AnnotationDefinition createAnnotation(ChangeDAO change) {
       StringBuilder content = new StringBuilder("Variable: ").append(change.variable.name);
       if (change.variable.group != null) {
          content.append(" (group ").append(change.variable.group).append(")");

@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Entity(name = "run")
 @RegisterForReflection
 @DynamicUpdate // We don't want to trigger schema analysis when trashing the run
-public class Run extends ProtectedBaseEntity {
+public class RunDAO extends ProtectedBaseEntity {
    public static final String EVENT_NEW = "run/new";
    public static final String EVENT_TRASHED = "run/trashed";
    public static final String EVENT_VALIDATED = "run/validated";
@@ -71,7 +71,7 @@ public class Run extends ProtectedBaseEntity {
 
    @OneToMany(mappedBy = "run", cascade = CascadeType.ALL, orphanRemoval = true)
    @JsonIgnore
-   public Collection<DataSet> datasets;
+   public Collection<DataSetDAO> datasets;
 
    @CollectionTable
    @ElementCollection

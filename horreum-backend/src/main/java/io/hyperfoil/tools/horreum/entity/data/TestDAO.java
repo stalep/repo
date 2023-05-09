@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @Entity(name="test")
 @RegisterForReflection
-public class Test extends PanacheEntityBase {
+public class TestDAO extends PanacheEntityBase {
    public static final String EVENT_NEW = "test/new";
    public static final String EVENT_DELETED = "test/deleted";
 
@@ -65,7 +65,7 @@ public class Test extends PanacheEntityBase {
    public Access access = Access.PUBLIC;
 
    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
-   public Collection<TestToken> tokens;
+   public Collection<TestTokenDAO> tokens;
 
    @Schema(implementation = String[].class)
    @Column(name = "timeline_labels")
@@ -86,14 +86,14 @@ public class Test extends PanacheEntityBase {
    @NotNull
    @OneToMany(fetch = FetchType.EAGER, cascade = { CascadeType.ALL }, orphanRemoval = true, mappedBy = "test")
    @Fetch(FetchMode.SELECT)
-   public Collection<View> views;
+   public Collection<ViewDAO> views;
 
    public String compareUrl;
 
    @OneToMany(fetch = FetchType.EAGER)
    @JoinTable(name = "test_transformers", joinColumns = @JoinColumn(name = "test_id"), inverseJoinColumns = @JoinColumn(name = "transformer_id"))
    @Fetch(FetchMode.SELECT)
-   public Collection<Transformer> transformers;
+   public Collection<TransformerDAO> transformers;
 
    @NotNull
    @Column(columnDefinition = "boolean default true")

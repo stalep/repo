@@ -12,35 +12,35 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
-import io.hyperfoil.tools.horreum.entity.data.Run;
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
+import io.hyperfoil.tools.horreum.entity.data.RunDAO;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 
 /**
- * This table is meant to host logged events with relation to {@link DataSet datasets},
- * as opposed to events related directly to {@link Run runs}.
+ * This table is meant to host logged events with relation to {@link DataSetDAO datasets},
+ * as opposed to events related directly to {@link RunDAO runs}.
  */
-@Entity
-public class DatasetLog extends PersistentLog {
+@Entity(name = "DatasetLog")
+public class DatasetLogDAO extends PersistentLog {
 
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @JoinColumn(name = "testid", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
    @JsonIgnore
-   public Test test;
+   public TestDAO test;
 
    @ManyToOne(fetch = FetchType.EAGER, optional = false)
    @JoinColumn(name = "dataset_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
    @JsonIgnore
-   public DataSet dataset;
+   public DataSetDAO dataset;
 
    @NotNull
    public String source;
 
-   public DatasetLog() {
+   public DatasetLogDAO() {
       super(0, null);
    }
 
-   public DatasetLog(Test test, DataSet dataset, int level, String source, String message) {
+   public DatasetLogDAO(TestDAO test, DataSetDAO dataset, int level, String source, String message) {
       super(level, message);
       this.test = test;
       this.dataset = dataset;

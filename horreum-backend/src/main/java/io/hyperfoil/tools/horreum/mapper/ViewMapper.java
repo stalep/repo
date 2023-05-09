@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class ViewMapper {
-    public static ViewDTO from(View v) {
+    public static ViewDTO from(ViewDAO v) {
         ViewDTO dto = new ViewDTO();
         dto.id = v.id;
         dto.name = v.name;
@@ -30,12 +30,12 @@ public class ViewMapper {
         return dto;
     }
 
-    public static View to(ViewDTO dto) {
-        View v = new View();
+    public static ViewDAO to(ViewDTO dto) {
+        ViewDAO v = new ViewDAO();
         v.id = dto.id;
         v.name = dto.name;
         if(dto.testId != null && dto.testId > 0)
-            v.test = View.getEntityManager().getReference(Test.class, dto.testId);
+            v.test = ViewDAO.getEntityManager().getReference(TestDAO.class, dto.testId);
         if(dto.components != null)
             v.components = dto.components.stream().map(c -> ViewMapper.toViewComponent(c, v)).collect(Collectors.toList());
         else
@@ -44,7 +44,7 @@ public class ViewMapper {
         return v;
     }
 
-    private static ViewComponent toViewComponent(ViewComponentDTO dto, View view) {
+    private static ViewComponent toViewComponent(ViewComponentDTO dto, ViewDAO view) {
         ViewComponent vc = new ViewComponent();
         vc.id = dto.id;
         vc.headerName = dto.headerName;

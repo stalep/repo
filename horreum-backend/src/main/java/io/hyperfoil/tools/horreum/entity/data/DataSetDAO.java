@@ -39,7 +39,7 @@ import io.smallrye.common.constraint.NotNull;
 /**
  * Purpose of this object is to represent derived run data.
  */
-public class DataSet extends OwnedEntityBase {
+public class DataSetDAO extends OwnedEntityBase {
    public static final String EVENT_NEW = "dataset/new";
    public static final String EVENT_LABELS_UPDATED = "dataset/updatedlabels";
    public static final String EVENT_MISSING_VALUES = "dataset/missing_values";
@@ -76,7 +76,7 @@ public class DataSet extends OwnedEntityBase {
    @ManyToOne(cascade = CascadeType.DETACH, fetch = FetchType.LAZY)
    @JoinColumn(name = "runid")
    @JsonIgnore
-   public io.hyperfoil.tools.horreum.entity.data.Run run;
+   public RunDAO run;
 
    @NotNull
    public int ordinal;
@@ -92,7 +92,7 @@ public class DataSet extends OwnedEntityBase {
 
    @JsonProperty("runId")
    public void setRunId(int runId) {
-      run = getEntityManager().getReference(io.hyperfoil.tools.horreum.entity.data.Run.class, runId);
+      run = getEntityManager().getReference(RunDAO.class, runId);
    }
 
    @JsonIgnore
@@ -112,17 +112,17 @@ public class DataSet extends OwnedEntityBase {
    }
 
    @JsonIgnore
-   public DataSet.Info getInfo() {
-      return new DataSet.Info(id, run.id, ordinal, testid);
+   public DataSetDAO.Info getInfo() {
+      return new DataSetDAO.Info(id, run.id, ordinal, testid);
    }
 
    public static class EventNew {
-      public DataSet dataset;
+      public DataSetDAO dataset;
       public boolean isRecalculation;
 
       public EventNew() {}
 
-      public EventNew(DataSet dataset, boolean isRecalculation) {
+      public EventNew(DataSetDAO dataset, boolean isRecalculation) {
          this.dataset = dataset;
          this.isRecalculation = isRecalculation;
       }
@@ -151,9 +151,9 @@ public class DataSet extends OwnedEntityBase {
       }
    }
 
-   public DataSet() {}
+   public DataSetDAO() {}
 
-   public DataSet(Run run, int ordinal, String description, JsonNode data) {
+   public DataSetDAO(RunDAO run, int ordinal, String description, JsonNode data) {
       this.run = run;
       this.start = run.start;
       this.stop = run.stop;

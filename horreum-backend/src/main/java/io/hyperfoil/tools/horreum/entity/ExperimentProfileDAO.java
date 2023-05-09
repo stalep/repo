@@ -28,12 +28,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
-@Entity
+@Entity(name = "ExperimentProfile")
 @Table(name = "experiment_profile")
-public class ExperimentProfile extends PanacheEntityBase {
+public class ExperimentProfileDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -53,7 +53,7 @@ public class ExperimentProfile extends PanacheEntityBase {
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @JoinColumn(foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
    @JsonIgnore
-   public Test test;
+   public TestDAO test;
 
    @Schema(implementation = String[].class, required = true)
    @Column(name = "selector_labels")

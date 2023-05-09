@@ -23,8 +23,8 @@ import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Entity
-public class Transformer extends OwnedEntityBase implements Comparable<Transformer> {
+@Entity(name = "Transformer")
+public class TransformerDAO extends OwnedEntityBase implements Comparable<TransformerDAO> {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -49,7 +49,7 @@ public class Transformer extends OwnedEntityBase implements Comparable<Transform
    @JsonIgnore
    @ManyToOne(optional = false)
    @JoinColumn(name = "schema_id")
-   public Schema schema;
+   public SchemaDAO schema;
 
    @NotNull
    @ElementCollection(fetch = FetchType.EAGER)
@@ -75,7 +75,7 @@ public class Transformer extends OwnedEntityBase implements Comparable<Transform
 
    @JsonProperty(value = "schemaId")
    public void setSchemaId(int schemaId) {
-      schema = Schema.getEntityManager().getReference(Schema.class, schemaId);
+      schema = SchemaDAO.getEntityManager().getReference(SchemaDAO.class, schemaId);
    }
 
    // This gets invoked during deserialization on message bus
@@ -89,7 +89,7 @@ public class Transformer extends OwnedEntityBase implements Comparable<Transform
    }
 
    @Override
-   public int compareTo(Transformer o) {
+   public int compareTo(TransformerDAO o) {
       if (o != null) {
          if (o == this) {
             return 0;

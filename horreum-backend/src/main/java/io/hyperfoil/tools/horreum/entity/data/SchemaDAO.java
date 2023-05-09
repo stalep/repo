@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 @NamedNativeQueries({
    @NamedNativeQuery(
-      name = Schema.QUERY_1ST_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID,
+      name = SchemaDAO.QUERY_1ST_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID,
       query = "SELECT te.name, (" +
             "CASE WHEN te.isarray THEN jsonb_path_query_array(r.data, te.jsonpath::::jsonpath) " +
             "ELSE jsonb_path_query_first(r.data,te.jsonpath::::jsonpath) END) AS value " +
@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.JsonNode;
             "WHERE r.id = ?1 AND t.id = ?2"
    ),
    @NamedNativeQuery(
-      name = Schema.QUERY_2ND_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID,
+      name = SchemaDAO.QUERY_2ND_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID,
       query = "SELECT te.name, (" +
             "CASE WHEN te.isarray THEN jsonb_path_query_array((CASE WHEN ?4 = 0 THEN r.data ELSE r.metadata END)->?3, te.jsonpath::::jsonpath) " +
             "ELSE jsonb_path_query_first((CASE WHEN ?4 = 0 THEN r.data ELSE r.metadata END)->?3, te.jsonpath::::jsonpath) END) AS value " +
@@ -44,20 +44,20 @@ import com.fasterxml.jackson.databind.JsonNode;
             "WHERE r.id = ?1 AND t.id = ?2"
    ),
    @NamedNativeQuery(
-         name = Schema.QUERY_TRANSFORMER_TARGETS,
+         name = SchemaDAO.QUERY_TRANSFORMER_TARGETS,
          query = "SELECT rs.type, rs.key, t.id as transformer_id, rs.uri, rs.source FROM run_schemas rs " +
                "LEFT JOIN transformer t ON t.schema_id = rs.schemaid AND t.id IN (SELECT transformer_id FROM test_transformers WHERE test_id = rs.testid) " +
                "WHERE rs.runid = ?1 ORDER BY transformer_id NULLS LAST, type, key"
          )
 })
 
-@Entity
+@Entity(name = "Schema")
 @RegisterForReflection
 @Table(
       name = "schema",
       uniqueConstraints = @UniqueConstraint(columnNames = {"owner", "uri"})
 )
-public class Schema extends ProtectedBaseEntity {
+public class SchemaDAO extends ProtectedBaseEntity {
 
    public static final String QUERY_1ST_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID = "Schema.getFirstLevelExtractorsByRunIDTransIDSchemaID";
    public static final String QUERY_2ND_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID = "Schema.getSecondLevelExtractorsByRunIDTransIDSchemaID";

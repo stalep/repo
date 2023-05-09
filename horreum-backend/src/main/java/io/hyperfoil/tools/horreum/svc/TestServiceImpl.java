@@ -106,7 +106,7 @@ public class TestServiceImpl implements TestService {
    @Transactional
    @Override
    public void delete(int id){
-      Test test = Test.findById(id);
+      TestDAO test = TestDAO.findById(id);
       if (test == null) {
          throw ServiceException.notFound("No test with id " + id);
       } else if (!identity.getRoles().contains(test.owner)) {
@@ -114,7 +114,7 @@ public class TestServiceImpl implements TestService {
       }
       log.debugf("Deleting test %s (%d)", test.name, test.id);
       test.delete();
-      messageBus.publish(Test.EVENT_DELETED, test.id, test);
+      messageBus.publish(TestDAO.EVENT_DELETED, test.id, test);
    }
 
    @Override
@@ -122,7 +122,7 @@ public class TestServiceImpl implements TestService {
    @WithRoles
    @PermitAll
    public TestDTO get(int id, String token){
-      Test test = Test.find("id", id).firstResult();
+      TestDAO test = TestDAO.find("id", id).firstResult();
       if (test == null) {
          throw ServiceException.notFound("No test with id " + id);
       }
@@ -132,12 +132,12 @@ public class TestServiceImpl implements TestService {
 
    @Override
    public TestDTO getByNameOrId(String input){
-      Test test;
+      TestDAO test;
       if (input.matches("-?\\d+")) {
          int id = Integer.parseInt(input);
-         test =  Test.find("name = ?1 or id = ?2", input, id).firstResult();
+         test =  TestDAO.find("name = ?1 or id = ?2", input, id).firstResult();
       } else {
-         test =  Test.find("name", input).firstResult();
+         test =  TestDAO.find("name", input).firstResult();
       }
       if (test == null) {
          throw ServiceException.notFound("No test with name " + input);
@@ -146,16 +146,16 @@ public class TestServiceImpl implements TestService {
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
-   public Test ensureTestExists(String input, String token){
-      Test test;
+   public TestDAO ensureTestExists(String input, String token){
+      TestDAO test;
       if (input.matches("-?\\d+")) {
          int id = Integer.parseInt(input);
-         test = Test.find("name = ?1 or id = ?2", input, id).firstResult();
+         test = TestDAO.find("name = ?1 or id = ?2", input, id).firstResult();
       } else {
-         test = Test.find("name", input).firstResult();
+         test = TestDAO.find("name", input).firstResult();
       }
       if (test != null) {// we won't return the whole entity with any data
-         Test detached = new Test();
+         TestDAO detached = new TestDAO();
          detached.id = test.id;
          detached.owner = test.owner;
          detached.name = input;
@@ -181,14 +181,14 @@ public class TestServiceImpl implements TestService {
       if (!identity.hasRole(dto.owner)) {
          throw ServiceException.forbidden("This user does not have the " + dto.owner + " role!");
       }
-      Test test = TestMapper.to(dto);
+      TestDAO test = TestMapper.to(dto);
       addAuthenticated(test);
       Hibernate.initialize(test.tokens);
       return TestMapper.from(test);
    }
 
-   void addAuthenticated(Test test) {
-      Test existing = Test.find("id", test.id).firstResult();
+   void addAuthenticated(TestDAO test) {
+      TestDAO existing = TestDAO.find("id", test.id).firstResult();
       if (test.id != null && test.id <= 0) {
          test.id = null;
       }
@@ -210,12 +210,12 @@ public class TestServiceImpl implements TestService {
          em.merge(test);
       } else {
          if (test.views != null) {
-            test.views.forEach(View::ensureLinked);
+            test.views.forEach(ViewDAO::ensureLinked);
          }
          // We need to persist the test before view in order for RLS to work
          test.persist();
          if (test.views == null || test.views.isEmpty()) {
-            test.views = Collections.singleton(new View("Default", test));
+            test.views = Collections.singleton(new ViewDAO("Default", test));
             test.persist();
          }
          try {
@@ -227,7 +227,7 @@ public class TestServiceImpl implements TestService {
                throw new WebApplicationException(e, Response.serverError().build());
             }
          }
-         messageBus.publish(Test.EVENT_NEW, test.id, test);
+         messageBus.publish(TestDAO.EVENT_NEW, test.id, test);
       }
    }
 
@@ -235,7 +235,7 @@ public class TestServiceImpl implements TestService {
    @PermitAll
    @WithRoles
    public List<TestDTO> list(String roles, Integer limit, Integer page, String sort, SortDirection direction){
-      PanacheQuery<Test> query;
+      PanacheQuery<TestDAO> query;
       Set<String> actualRoles = null;
       if (Roles.hasRolesParam(roles)) {
          if (roles.equals("__my")) {
@@ -250,9 +250,9 @@ public class TestServiceImpl implements TestService {
       Sort.Direction sortDirection = direction == null ? null : Sort.Direction.valueOf(direction.name());
       Sort sortOptions = Sort.by(sort).direction(sortDirection);
       if (actualRoles == null) {
-         query = Test.findAll(sortOptions);
+         query = TestDAO.findAll(sortOptions);
       } else {
-         query = Test.find("owner IN ?1", sortOptions, actualRoles);
+         query = TestDAO.find("owner IN ?1", sortOptions, actualRoles);
       }
       if (limit != null && page != null) {
          query.page(Page.of(page, limit));
@@ -348,8 +348,8 @@ public class TestServiceImpl implements TestService {
       if (dto.hasUpload() && !dto.hasRead()) {
          throw ServiceException.badRequest("Upload permission requires read permission as well.");
       }
-      Test test = getTestForUpdate(testId);
-      TestToken token = TestTokenMapper.to(dto);
+      TestDAO test = getTestForUpdate(testId);
+      TestTokenDAO token = TestTokenMapper.to(dto);
       token.id = null; // this is always a new token, ignore -1 in the request
       token.test = test;
       test.tokens.add(token);
@@ -361,7 +361,7 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed("tester")
    @WithRoles
    public Collection<TestTokenDTO> tokens(int testId) {
-      Test t = Test.findById(testId);
+      TestDAO t = TestDAO.findById(testId);
       Hibernate.initialize(t.tokens);
       return t.tokens.stream().map(TestTokenMapper::from).collect(Collectors.toList());
    }
@@ -371,7 +371,7 @@ public class TestServiceImpl implements TestService {
    @WithRoles
    @Transactional
    public void dropToken(int testId, int tokenId) {
-      Test test = getTestForUpdate(testId);
+      TestDAO test = getTestForUpdate(testId);
       test.tokens.removeIf(t -> Objects.equals(t.id, tokenId));
       test.persist();
    }
@@ -401,8 +401,8 @@ public class TestServiceImpl implements TestService {
       if (testId <= 0) {
          throw ServiceException.badRequest("Missing test id");
       }
-      Test test = getTestForUpdate(testId);
-      View view = ViewMapper.to(dto);
+      TestDAO test = getTestForUpdate(testId);
+      ViewDAO view = ViewMapper.to(dto);
       view.ensureLinked();
       view.test = test;
       if (view.id == null || view.id < 0) {
@@ -423,9 +423,9 @@ public class TestServiceImpl implements TestService {
    @WithRoles
    @Transactional
    public void deleteView(int testId, int viewId) {
-      Test test = getTestForUpdate(testId);
+      TestDAO test = getTestForUpdate(testId);
       if (test.views == null) {
-         test.views = Collections.singleton(new View("Default", test));
+         test.views = Collections.singleton(new ViewDAO("Default", test));
       } else if (test.views.stream().anyMatch(v -> v.id == viewId && "Default".equals(v.name))) {
          throw ServiceException.badRequest("Cannot remove default view.");
       }
@@ -433,7 +433,7 @@ public class TestServiceImpl implements TestService {
          throw ServiceException.badRequest("Test does not contain this view!");
       }
       // the orphan removal doesn't work for some reason, we need to remove if manually
-      View.deleteById(viewId);
+      ViewDAO.deleteById(viewId);
       test.persist();
    }
 
@@ -459,7 +459,7 @@ public class TestServiceImpl implements TestService {
       if ("*".equals(folder)) {
          throw new IllegalArgumentException("Illegal folder name '*': this is used as wildcard.");
       }
-      Test test = getTestForUpdate(id);
+      TestDAO test = getTestForUpdate(id);
       test.folder = normalizeFolderName(folder);
       test.persist();
    }
@@ -477,12 +477,12 @@ public class TestServiceImpl implements TestService {
       dto.testId = testId;
       actionService.validate(dto);
 
-      Action action = ActionMapper.to(dto);
+      ActionDAO action = ActionMapper.to(dto);
       if (action.id == null) {
          action.persist();
       } else {
          if (!action.active) {
-            Action.deleteById(action.id);
+            ActionDAO.deleteById(action.id);
             return null;
          } else {
             actionService.merge(action);
@@ -522,9 +522,9 @@ public class TestServiceImpl implements TestService {
       if (transformerIds == null) {
          throw ServiceException.badRequest("Null transformer IDs");
       }
-      Test test = getTestForUpdate(testId);
+      TestDAO test = getTestForUpdate(testId);
       test.transformers.clear();
-      test.transformers.addAll(Transformer.list("id IN ?1", transformerIds));
+      test.transformers.addAll(TransformerDAO.list("id IN ?1", transformerIds));
       test.persistAndFlush();
    }
 
@@ -532,8 +532,8 @@ public class TestServiceImpl implements TestService {
    @WithRoles
    @Transactional
    public void recalculateDatasets(int testId) {
-      Test test = getTestForUpdate(testId);
-      RecalculationStatus status = new RecalculationStatus(Run.count("testid = ?1 AND trashed = false", testId));
+      TestDAO test = getTestForUpdate(testId);
+      RecalculationStatus status = new RecalculationStatus(RunDAO.count("testid = ?1 AND trashed = false", testId));
       // we don't have to care about races with new runs
       RecalculationStatus prev = recalculations.putIfAbsent(testId, status);
       while (prev != null) {
@@ -587,9 +587,9 @@ public class TestServiceImpl implements TestService {
    public RecalculationStatus getRecalculationStatus(int testId) {
       RecalculationStatus status = recalculations.get(testId);
       if (status == null) {
-         status = new RecalculationStatus(Run.count("testid = ?1 AND trashed = false", testId));
+         status = new RecalculationStatus(RunDAO.count("testid = ?1 AND trashed = false", testId));
          status.finished = status.totalRuns;
-         status.datasets = DataSet.count("testid", testId);
+         status.datasets = DataSetDAO.count("testid", testId);
       }
       return status;
    }
@@ -599,7 +599,7 @@ public class TestServiceImpl implements TestService {
    @Transactional
    @Override
    public JsonNode export(int testId) {
-      Test test = Test.findById(testId);
+      TestDAO test = TestDAO.findById(testId);
       if (test == null) {
          throw ServiceException.notFound("Test " + testId + " was not found");
       }
@@ -682,9 +682,9 @@ public class TestServiceImpl implements TestService {
                throw ServiceException.badRequest("Transformer " + transformer.name + " does not have ID set; Transformers must be imported via Schema.");
             });
          }
-         Test existingTest = Test.findById(dto.id);
+         TestDAO existingTest = TestDAO.findById(dto.id);
          if(existingTest != null) {
-            Test test = em.merge(TestMapper.to(dto));
+            TestDAO test = em.merge(TestMapper.to(dto));
             test.persistAndFlush();
             dto = TestMapper.from(test);
          }
@@ -702,8 +702,8 @@ public class TestServiceImpl implements TestService {
       subscriptionService.importSubscriptions(dto.id, subscriptions);
    }
 
-   Test getTestForUpdate(int testId) {
-      Test test = Test.findById(testId);
+   TestDAO getTestForUpdate(int testId) {
+      TestDAO test = TestDAO.findById(testId);
       if (test == null) {
          throw ServiceException.notFound("Test " + testId + " was not found");
       }

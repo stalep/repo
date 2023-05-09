@@ -10,19 +10,21 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**
- * For each {@link Variable} a datapoint will be created for each run.
+ * For each {@link VariableDAO} a datapoint will be created for each run.
  */
-@Entity
-public class DataPoint extends PanacheEntityBase {
+@Entity(name = "DataPoint")
+@Table(name = "DataPoint")
+public class DataPointDAO extends PanacheEntityBase {
    public static final String EVENT_NEW = "datapoint/new";
    public static final String EVENT_DELETED = "datapoint/deleted";
    public static final String EVENT_DATASET_PROCESSED = "datapoint/dataset_processed";
@@ -35,7 +37,7 @@ public class DataPoint extends PanacheEntityBase {
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @JoinColumn(name = "dataset_id")
    @JsonIgnore
-   public DataSet dataset;
+   public DataSetDAO dataset;
 
    @NotNull
    @Column(columnDefinition = "timestamp")
@@ -56,11 +58,11 @@ public class DataPoint extends PanacheEntityBase {
 
    @NotNull
    @ManyToOne(fetch = FetchType.LAZY)
-   public Variable variable;
+   public VariableDAO variable;
 
    @JsonProperty("datasetId")
    public void setDatasetId(int datasetId) {
-      dataset = DataSet.getEntityManager().getReference(DataSet.class, datasetId);
+      dataset = DataSetDAO.getEntityManager().getReference(DataSetDAO.class, datasetId);
    }
 
    @JsonProperty("datasetId")
@@ -69,14 +71,14 @@ public class DataPoint extends PanacheEntityBase {
    }
 
    public static class Event {
-      public DataPoint dataPoint;
+      public DataPointDAO dataPoint;
       public int testId;
       public boolean notify;
 
       public Event() {
       }
 
-      public Event(DataPoint dataPoint, int testId, boolean notify) {
+      public Event(DataPointDAO dataPoint, int testId, boolean notify) {
          this.dataPoint = dataPoint;
          this.testId = testId;
          this.notify = notify;
@@ -92,12 +94,12 @@ public class DataPoint extends PanacheEntityBase {
    }
 
    public static class DatasetProcessedEvent {
-      public DataSet.Info dataset;
+      public DataSetDAO.Info dataset;
       public boolean notify;
 
       public DatasetProcessedEvent() {}
 
-      public DatasetProcessedEvent(DataSet.Info dataset, boolean notify) {
+      public DatasetProcessedEvent(DataSetDAO.Info dataset, boolean notify) {
          this.dataset = dataset;
          this.notify = notify;
       }

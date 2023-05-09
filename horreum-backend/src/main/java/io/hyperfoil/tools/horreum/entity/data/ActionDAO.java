@@ -17,9 +17,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-@Entity
+@Entity(name = "Action")
 @RegisterForReflection
-public class Action extends PanacheEntityBase {
+public class ActionDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -64,10 +64,10 @@ public class Action extends PanacheEntityBase {
    @Column(name = "run_always")
    public boolean runAlways;
 
-   public Action() {
+   public ActionDAO() {
    }
-    public Action(Integer id, String event, String type, JsonNode config, JsonNode secrets,
-                  Integer testId, boolean active, boolean runAlways) {
+    public ActionDAO(Integer id, String event, String type, JsonNode config, JsonNode secrets,
+                     Integer testId, boolean active, boolean runAlways) {
        this.id = id;
        this.event = event;
        this.type = type;

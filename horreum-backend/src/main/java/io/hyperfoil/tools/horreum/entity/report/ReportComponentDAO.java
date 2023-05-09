@@ -13,12 +13,11 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.Type;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-@Entity
+@Entity(name = "ReportComponent")
 @Table(name = "reportcomponent")
-public class ReportComponent {
+public class ReportComponentDAO {
    @Id
    @GeneratedValue
    public Integer id;

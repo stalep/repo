@@ -25,16 +25,16 @@ import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**
- * Records parties interested in new {@link Change changes} in given test.
- * It's not possible to subscribe to individual {@link Variable}; all variables are watched.
+ * Records parties interested in new {@link ChangeDAO changes} in given test.
+ * It's not possible to subscribe to individual {@link VariableDAO}; all variables are watched.
  */
 @Entity(name = "watch")
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = "testid"))
-public class Watch extends PanacheEntityBase {
+public class WatchDAO extends PanacheEntityBase {
    @Id
    @GenericGenerator(
          name = "subscriptionIdGenerator",
@@ -52,7 +52,7 @@ public class Watch extends PanacheEntityBase {
    // over eventbus and delete the watch in an independent transaction.
    @JoinColumn(name = "testid", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), updatable = false)
    @JsonIgnore
-   public Test test;
+   public TestDAO test;
 
    @NotNull
    @ElementCollection(fetch = FetchType.EAGER)
@@ -76,7 +76,7 @@ public class Watch extends PanacheEntityBase {
 
    @JsonProperty(value = "testId")
    private void setTestId(int id) {
-      this.test = Test.getEntityManager().getReference(Test.class, id);
+      this.test = TestDAO.getEntityManager().getReference(TestDAO.class, id);
    }
 
    @Override

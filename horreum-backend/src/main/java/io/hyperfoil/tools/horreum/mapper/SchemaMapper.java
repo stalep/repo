@@ -1,10 +1,10 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.data.Schema;
+import io.hyperfoil.tools.horreum.entity.data.SchemaDAO;
 import io.hyperfoil.tools.horreum.api.data.SchemaDTO;
 
 public class SchemaMapper {
-    public static SchemaDTO from(Schema s) {
+    public static SchemaDTO from(SchemaDAO s) {
         SchemaDTO dto = new SchemaDTO();
         dto.id = s.id;
         dto.name = s.name;
@@ -18,8 +18,8 @@ public class SchemaMapper {
         return dto;
     }
 
-    public static Schema to(SchemaDTO dto) {
-        Schema s = new Schema();
+    public static SchemaDAO to(SchemaDTO dto) {
+        SchemaDAO s = new SchemaDAO();
         s.id = dto.id;
         s.name = dto.name;
         s.schema = dto.schema;

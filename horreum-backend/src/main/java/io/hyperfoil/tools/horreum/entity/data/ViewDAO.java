@@ -31,7 +31,7 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
  */
 @Entity(name = "view")
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = { "id", "name" }))
-public class View extends PanacheEntityBase {
+public class ViewDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -52,17 +52,17 @@ public class View extends PanacheEntityBase {
    // ownership and access in this entity separately.
    @ManyToOne(fetch = FetchType.LAZY)
    @JsonIgnore
-   public Test test;
+   public TestDAO test;
 
    @NotNull
    @OneToMany(fetch = FetchType.EAGER, mappedBy = "view", orphanRemoval = true, cascade = CascadeType.ALL)
    @OrderBy("headerorder ASC")
    public List<ViewComponent> components;
 
-   public View() {
+   public ViewDAO() {
    }
 
-   public View(String name, Test test) {
+   public ViewDAO(String name, TestDAO test) {
       this.name = name;
       this.test = test;
       this.components = Collections.emptyList();

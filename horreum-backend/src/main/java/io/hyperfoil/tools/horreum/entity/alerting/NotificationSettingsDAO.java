@@ -9,11 +9,11 @@ import javax.validation.constraints.NotNull;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 /**
- * Settings for notification on each change if the user/team has certain {@link Watch}.
+ * Settings for notification on each change if the user/team has certain {@link WatchDAO}.
  * Each user/team can have multiple notifications.
  */
 @Entity(name = "notificationsettings")
-public class NotificationSettings extends PanacheEntityBase {
+public class NotificationSettingsDAO extends PanacheEntityBase {
    @Id
    @GeneratedValue
    public Integer id;

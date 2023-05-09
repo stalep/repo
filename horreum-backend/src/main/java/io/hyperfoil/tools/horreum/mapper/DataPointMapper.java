@@ -1,12 +1,12 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
+import io.hyperfoil.tools.horreum.entity.alerting.DataPointDAO;
 import io.hyperfoil.tools.horreum.api.alerting.DataPointDTO;
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
 
 public class DataPointMapper {
 
-    public static DataPointDTO from(DataPoint dp) {
+    public static DataPointDTO from(DataPointDAO dp) {
         DataPointDTO dto = new DataPointDTO();
         dto.id = dp.id;
         dto.timestamp = dp.timestamp;
@@ -18,12 +18,12 @@ public class DataPointMapper {
         return dto;
     }
 
-    public static DataPoint to(DataPointDTO dto) {
-        DataPoint dp = new DataPoint();
+    public static DataPointDAO to(DataPointDTO dto) {
+        DataPointDAO dp = new DataPointDAO();
         dp.id = dto.id;
         dp.value = dto.value;
         dp.timestamp = dto.timestamp;
-        DataSet ds = new DataSet();
+        DataSetDAO ds = new DataSetDAO();
         ds.id = dto.datasetId;
         dp.dataset = ds;
         if(dto.variable != null)

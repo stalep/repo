@@ -13,12 +13,12 @@ import org.hibernate.annotations.Type;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
-@Entity
+@Entity(name = "Fingerprint")
 @Immutable
-public class Fingerprint extends PanacheEntityBase {
+public class FingerprintDAO extends PanacheEntityBase {
    @Id
    @Column(name = "dataset_id")
    public int datasetId;
@@ -26,7 +26,7 @@ public class Fingerprint extends PanacheEntityBase {
    @OneToOne(fetch = FetchType.LAZY)
    @MapsId
    @JoinColumn(name = "dataset_id")
-   public DataSet dataset;
+   public DataSetDAO dataset;
 
    @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
    public JsonNode fingerprint;

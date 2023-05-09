@@ -13,8 +13,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
-@Entity
-public class ReportComment extends PanacheEntityBase {
+@Entity(name = "ReportComment")
+public class ReportCommentDAO extends PanacheEntityBase {
    @Id
    @GeneratedValue
    public Integer id;
@@ -22,7 +22,7 @@ public class ReportComment extends PanacheEntityBase {
    @JsonIgnore
    @ManyToOne(fetch = FetchType.LAZY)
    @JoinColumn(name = "report_id", nullable = false)
-   public TableReport report;
+   public TableReportDAO report;
 
    // 0 = root comment, 1 = on category, 2 = on component
    @NotNull

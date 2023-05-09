@@ -9,18 +9,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
 
-@Entity
-public class ReportLog extends PersistentLog {
+@Entity(name = "ReportLog")
+public class ReportLogDAO extends PersistentLog {
    @ManyToOne(optional = false)
    @JoinColumn(name = "report_id")
    @JsonIgnore
-   TableReport report;
+   TableReportDAO report;
 
-   public ReportLog() {
+   public ReportLogDAO() {
       super(0, null);
    }
 
-   public ReportLog(TableReport report, int level, String message) {
+   public ReportLogDAO(TableReportDAO report, int level, String message) {
       super(level, message);
       this.report = report;
    }
@@ -35,6 +35,6 @@ public class ReportLog extends PersistentLog {
 
    @JsonProperty("reportId")
    public void setReportId(int reportId) {
-      report = getEntityManager().getReference(TableReport.class, reportId);
+      report = getEntityManager().getReference(TableReportDAO.class, reportId);
    }
 }

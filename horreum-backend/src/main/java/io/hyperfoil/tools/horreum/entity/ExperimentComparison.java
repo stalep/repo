@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import io.hyperfoil.tools.horreum.entity.alerting.Variable;
+import io.hyperfoil.tools.horreum.entity.alerting.VariableDAO;
 
 @Embeddable
 public class ExperimentComparison {
@@ -20,7 +20,7 @@ public class ExperimentComparison {
    @ManyToOne(optional = false, fetch = FetchType.LAZY)
    @JoinColumn(name = "variable_id")
    @JsonIgnore
-   public Variable variable;
+   public VariableDAO variable;
 
    @NotNull
    public String model;
@@ -31,7 +31,7 @@ public class ExperimentComparison {
 
    @JsonProperty("variableId")
    public void setVariableId(int id) {
-      variable = Variable.getEntityManager().getReference(Variable.class, id);
+      variable = VariableDAO.getEntityManager().getReference(VariableDAO.class, id);
    }
 
    @JsonProperty(value = "variableId", required = true)

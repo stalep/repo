@@ -2,14 +2,14 @@ package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.ExperimentComparison;
 import io.hyperfoil.tools.horreum.api.data.ExperimentComparisonDTO;
-import io.hyperfoil.tools.horreum.entity.ExperimentProfile;
+import io.hyperfoil.tools.horreum.entity.ExperimentProfileDAO;
 import io.hyperfoil.tools.horreum.api.data.ExperimentProfileDTO;
 
 import java.util.stream.Collectors;
 
 public class ExperimentProfileMapper {
 
-    public static ExperimentProfileDTO from(ExperimentProfile ep) {
+    public static ExperimentProfileDTO from(ExperimentProfileDAO ep) {
         ExperimentProfileDTO dto = new ExperimentProfileDTO();
         dto.id = ep.id;
         dto.name = ep.name;
@@ -35,8 +35,8 @@ public class ExperimentProfileMapper {
         return dto;
     }
 
-    public static ExperimentProfile to(ExperimentProfileDTO dto) {
-        ExperimentProfile ep = new ExperimentProfile();
+    public static ExperimentProfileDAO to(ExperimentProfileDTO dto) {
+        ExperimentProfileDAO ep = new ExperimentProfileDAO();
         ep.id = dto.id;
         ep.name = dto.name;
         ep.baselineLabels = dto.baselineLabels;

@@ -8,6 +8,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.GenericGenerator;
@@ -21,8 +22,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
-@Entity
-public class ChangeDetection extends PanacheEntityBase {
+@Entity(name = "ChangeDetection")
+public class ChangeDetectionDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
@@ -46,7 +47,7 @@ public class ChangeDetection extends PanacheEntityBase {
    @ManyToOne(fetch = FetchType.LAZY)
    @JoinColumn(name = "variable_id")
    @JsonIgnore
-   public Variable variable;
+   public VariableDAO variable;
 
    @Override
    public String toString() {

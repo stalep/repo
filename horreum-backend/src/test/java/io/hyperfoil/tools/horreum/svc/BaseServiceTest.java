@@ -155,29 +155,29 @@ public class BaseServiceTest {
          try (CloseMe ignored = roleManager.withRoles(Stream.concat(Stream.of(TESTER_ROLES), Stream.of(Roles.HORREUM_SYSTEM, Roles.ADMIN))
                .collect(Collectors.toList()))) {
             ViewComponent.deleteAll();
-            View.deleteAll();
+            ViewDAO.deleteAll();
 
             em.createNativeQuery("DELETE FROM test_transformers").executeUpdate();
             em.createNativeQuery("DELETE FROM transformer_extractors").executeUpdate();
-            Transformer.deleteAll();
+            TransformerDAO.deleteAll();
             em.createNativeQuery("DELETE FROM test_token").executeUpdate();
-            Test.deleteAll();
-            Change.deleteAll();
-            DataPoint.deleteAll();
-            ChangeDetection.deleteAll();
-            Variable.deleteAll();
+            TestDAO.deleteAll();
+            ChangeDAO.deleteAll();
+            DataPointDAO.deleteAll();
+            ChangeDetectionDAO.deleteAll();
+            VariableDAO.deleteAll();
 
-            DataSet.deleteAll();
-            Run.deleteAll();
+            DataSetDAO.deleteAll();
+            RunDAO.deleteAll();
 
             em.createNativeQuery("DELETE FROM label_extractors").executeUpdate();
-            Label.deleteAll();
-            Schema.deleteAll();
+            LabelDAO.deleteAll();
+            SchemaDAO.deleteAll();
 
-            Action.deleteAll();
-            AllowedSite.deleteAll();
+            ActionDAO.deleteAll();
+            AllowedSiteDAO.deleteAll();
 
-            for (var subscription : Watch.listAll()) {
+            for (var subscription : WatchDAO.listAll()) {
                subscription.delete();
             }
          }
@@ -365,11 +365,11 @@ public class BaseServiceTest {
       jsonRequest().delete("/api/schema/" + schema.id + "/labels/" + labelId).then().statusCode(204);
    }
 
-   protected void setTestVariables(TestDTO test, String name, String label, ChangeDetection... rds) {
+   protected void setTestVariables(TestDTO test, String name, String label, ChangeDetectionDAO... rds) {
       setTestVariables(test, name, Collections.singletonList(label), rds);
    }
 
-   protected void setTestVariables(TestDTO test, String name, List<String> labels, ChangeDetection... rds) {
+   protected void setTestVariables(TestDTO test, String name, List<String> labels, ChangeDetectionDAO... rds) {
       ArrayNode variables = JsonNodeFactory.instance.arrayNode();
       ObjectNode variable = JsonNodeFactory.instance.objectNode();
       variable.put("testid", test.id);
@@ -377,7 +377,7 @@ public class BaseServiceTest {
       variable.set("labels", labels.stream().reduce(JsonNodeFactory.instance.arrayNode(), ArrayNode::add, ArrayNode::addAll));
       if (rds.length > 0) {
          ArrayNode rdsArray = JsonNodeFactory.instance.arrayNode();
-         for (ChangeDetection rd : rds) {
+         for (ChangeDetectionDAO rd : rds) {
             rdsArray.add(JsonNodeFactory.instance.objectNode().put("model", rd.model).set("config", rd.config));
          }
          variable.set("changeDetection", rdsArray);
@@ -419,16 +419,16 @@ public class BaseServiceTest {
    }
 
    protected BlockingQueue<Integer> trashRun(int runId) throws InterruptedException {
-      BlockingQueue<Integer> trashedQueue = eventConsumerQueue(Integer.class, Run.EVENT_TRASHED, r -> true);
+      BlockingQueue<Integer> trashedQueue = eventConsumerQueue(Integer.class, RunDAO.EVENT_TRASHED, r -> true);
       jsonRequest().post("/api/run/" + runId + "/trash").then().statusCode(204);
       assertEquals(runId, trashedQueue.poll(10, TimeUnit.SECONDS));
       return trashedQueue;
    }
 
-   protected <T> T withExampleDataset(TestDTO test, JsonNode data, Function<DataSet, T> testLogic) {
-      BlockingQueue<DataSet.EventNew> dataSetQueue = eventConsumerQueue(DataSet.EventNew.class, DataSet.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
+   protected <T> T withExampleDataset(TestDTO test, JsonNode data, Function<DataSetDAO, T> testLogic) {
+      BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       try {
-         Run run = new Run();
+         RunDAO run = new RunDAO();
          tm.begin();
          try (CloseMe ignored = roleManager.withRoles(Arrays.asList(UPLOADER_ROLES))) {
             run.data = data;
@@ -444,7 +444,7 @@ public class BaseServiceTest {
                fail();
             }
          }
-         DataSet.EventNew event = dataSetQueue.poll(10, TimeUnit.SECONDS);
+         DataSetDAO.EventNew event = dataSetQueue.poll(10, TimeUnit.SECONDS);
          assertNotNull(event);
          assertNotNull(event.dataset);
          // only to cover the summary call in API
@@ -453,12 +453,12 @@ public class BaseServiceTest {
          tm.begin();
          Throwable error = null;
          try (CloseMe ignored = roleManager.withRoles(SYSTEM_ROLES)) {
-            DataSet oldDs = DataSet.findById(event.dataset.id);
+            DataSetDAO oldDs = DataSetDAO.findById(event.dataset.id);
             if (oldDs != null) {
                oldDs.delete();
             }
-            DataSet.delete("runid", run.id);
-            Run.findById(run.id).delete();
+            DataSetDAO.delete("runid", run.id);
+            RunDAO.findById(run.id).delete();
          } catch (Throwable t) {
             error = t;
          } finally {
@@ -551,7 +551,7 @@ public class BaseServiceTest {
    }
 
    protected Response addTestHttpAction(TestDTO test, String event, String url) {
-      Action action = new Action();
+      ActionDAO action = new ActionDAO();
       action.event = event;
       action.type = HttpAction.TYPE_HTTP;
       action.active = true;
@@ -560,7 +560,7 @@ public class BaseServiceTest {
    }
 
    protected Response addTestGithubIssueCommentAction(TestDTO test, String event, String formatter, String owner, String repo, String issue, String secretToken) {
-      Action action = new Action();
+      ActionDAO action = new ActionDAO();
       action.event = event;
       action.type = GitHubIssueCommentAction.TYPE_GITHUB_ISSUE_COMMENT;
       action.active = true;
@@ -574,7 +574,7 @@ public class BaseServiceTest {
    }
 
    protected Response addGlobalAction(String event, String url) {
-      Action action = new Action();
+      ActionDAO action = new ActionDAO();
       action.event = event;
       action.type = "http";
       action.active = true;
@@ -583,12 +583,12 @@ public class BaseServiceTest {
             .header(HttpHeaders.CONTENT_TYPE, "application/json").body(action).post("/api/action");
    }
 
-   protected ChangeDetection addChangeDetectionVariable(TestDTO test) {
+   protected ChangeDetectionDAO addChangeDetectionVariable(TestDTO test) {
       return addChangeDetectionVariable(test, 0.1, 2);
    }
 
-   protected ChangeDetection addChangeDetectionVariable(TestDTO test, double threshold, int window) {
-      ChangeDetection cd = new ChangeDetection();
+   protected ChangeDetectionDAO addChangeDetectionVariable(TestDTO test, double threshold, int window) {
+      ChangeDetectionDAO cd = new ChangeDetectionDAO();
       cd.model = RelativeDifferenceChangeDetectionModel.NAME;
       cd.config = JsonNodeFactory.instance.objectNode().put("threshold", threshold).put("minPrevious", window).put("window", window).put("filter", "mean");
       setTestVariables(test, "Value", "value", cd);
@@ -606,7 +606,7 @@ public class BaseServiceTest {
       return Integer.parseInt(ruleIdString);
    }
 
-   protected void addExperimentProfile(TestDTO test, String name, Variable... variables) {
+   protected void addExperimentProfile(TestDTO test, String name, VariableDAO... variables) {
       ExperimentProfileDTO profile = new ExperimentProfileDTO();
       profile.name = name;
       profile.testId = test.id;

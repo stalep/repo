@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
 @Entity(name = "test_token")
-public class TestToken {
+public class TestTokenDAO {
    public static final int READ = 1;
    // e.g. change config, or delete
    public static final int MODIFY = 2;
@@ -44,7 +44,7 @@ public class TestToken {
    @ManyToOne(fetch = FetchType.LAZY)
    @JoinColumn(name = "test_id")
    @JsonIgnore
-   public Test test;
+   public TestDAO test;
 
    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
    @NotNull

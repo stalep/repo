@@ -20,8 +20,8 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.entity.data.Run;
-import io.hyperfoil.tools.horreum.entity.data.Test;
+import io.hyperfoil.tools.horreum.entity.data.RunDAO;
+import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.hyperfoil.tools.horreum.mapper.RunMapper;
 import io.hyperfoil.tools.horreum.mapper.TestMapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -192,10 +192,10 @@ public class MessageBus {
    }
 
    private Object mapToDTO(Object entity) {
-      if (entity instanceof Run)
-         return RunMapper.from((Run) entity);
-      else if (entity instanceof Test)
-         return TestMapper.from((Test) entity);
+      if (entity instanceof RunDAO)
+         return RunMapper.from((RunDAO) entity);
+      else if (entity instanceof TestDAO)
+         return TestMapper.from((TestDAO) entity);
       // lets just return for now
       return entity;
    }

@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import javax.enterprise.context.ApplicationScoped;
 
 import io.hyperfoil.tools.horreum.api.alerting.ChangeDTO;
-import io.hyperfoil.tools.horreum.entity.data.DataSet;
+import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,7 +34,7 @@ public class ChangeToMarkdown implements BodyFormatter {
       }
       ChangeDTO.Event event = (ChangeDTO.Event) payload;
       ChangeDTO change = event.change;
-      String fingerprint = DataSet.getEntityManager().getReference(DataSet.class, change.dataset.id).getFingerprint();
+      String fingerprint = DataSetDAO.getEntityManager().getReference(DataSetDAO.class, change.dataset.id).getFingerprint();
       return template
             .data("testName", event.testName)
             .data("testNameEncoded", URLEncoder.encode(event.testName, StandardCharsets.UTF_8))
