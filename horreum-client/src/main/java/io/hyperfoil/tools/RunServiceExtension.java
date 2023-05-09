@@ -10,8 +10,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.hyperfoil.tools.horreum.api.data.RunDTO;
-import io.hyperfoil.tools.horreum.services.QueryResult;
-import io.hyperfoil.tools.horreum.services.RunService;
+import io.hyperfoil.tools.horreum.api.services.QueryResult;
+import io.hyperfoil.tools.horreum.api.services.RunService;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataOutput;
 

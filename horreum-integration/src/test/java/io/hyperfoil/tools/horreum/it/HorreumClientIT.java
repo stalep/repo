@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.hyperfoil.tools.horreum.api.data.*;
 import io.hyperfoil.tools.horreum.it.profile.InContainerProfile;
-import io.hyperfoil.tools.horreum.services.DatasetService;
+import io.hyperfoil.tools.horreum.api.services.DatasetService;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.callback.*;

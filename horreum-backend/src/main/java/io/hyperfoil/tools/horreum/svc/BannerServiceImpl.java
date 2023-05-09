@@ -14,7 +14,7 @@ import javax.transaction.Transactional;
 
 import io.hyperfoil.tools.horreum.api.data.BannerDTO;
 import io.hyperfoil.tools.horreum.mapper.BannerMapper;
-import io.hyperfoil.tools.horreum.services.BannerService;
+import io.hyperfoil.tools.horreum.api.services.BannerService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 

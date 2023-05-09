@@ -20,7 +20,7 @@ import io.hyperfoil.tools.horreum.mapper.TransformationLogMapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import io.hyperfoil.tools.horreum.services.LogService;
+import io.hyperfoil.tools.horreum.api.services.LogService;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.ActionLog;
 import io.hyperfoil.tools.horreum.entity.alerting.DatasetLog;

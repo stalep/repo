@@ -1,4 +1,4 @@
-package io.hyperfoil.tools.horreum.services;
+package io.hyperfoil.tools.horreum.api.services;
 
 import java.time.Instant;
 import java.util.ArrayList;

@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.hyperfoil.tools.horreum.api.ConditionConfig;
-import io.hyperfoil.tools.horreum.services.ExperimentService;
+import io.hyperfoil.tools.horreum.api.services.ExperimentService;
 import io.hyperfoil.tools.horreum.entity.alerting.DataPoint;
 
 public class RelativeDifferenceExperimentModel implements ExperimentConditionModel {
