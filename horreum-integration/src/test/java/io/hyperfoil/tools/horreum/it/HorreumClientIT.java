@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.hyperfoil.tools.horreum.api.DatasetService;
 import io.hyperfoil.tools.horreum.entity.json.*;
 import io.hyperfoil.tools.horreum.it.profile.InContainerProfile;
+import io.hyperfoil.tools.horreum.services.DatasetService;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.callback.*;
@@ -55,7 +55,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
 
     @Test
     public void testAddRun() throws JsonProcessingException {
-        Run run = new Run();
+        RunDTO run = new RunDTO();
         run.start = Instant.now();
         run.stop = Instant.now();
         run.testid = -1; // should be ignored
@@ -67,7 +67,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
     // Javascript execution gets often broken with new Quarkus releases, this should catch it
     @Test
     public void testJavascriptExecution() throws InterruptedException {
-        Schema schema = new Schema();
+        SchemaDTO schema = new SchemaDTO();
         schema.uri = "urn:dummy:schema";
         schema.name = "Dummy";
         schema.owner = dummyTest.owner;
@@ -94,11 +94,11 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
         }
         Assertions.assertNotEquals(-1, datasetId);
 
-        Label label = new Label();
+        LabelDTO label = new LabelDTO();
         label.name = "foo";
-        label.schema = schema;
+        label.schemaId= schema.id;
         label.function = "value => value";
-        label.extractors = Collections.singletonList(new Extractor("value", "$.value", false));
+        label.extractors = Collections.singletonList(new ExtractorDTO("value", "$.value", false));
         DatasetService.LabelPreview preview = horreumClient.datasetService.previewLabel(datasetId, label);
         Assertions.assertEquals("foobar", preview.value.textValue());
     }
@@ -116,7 +116,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
 
     public static HorreumClient horreumClient;
 
-    public static io.hyperfoil.tools.horreum.entity.json.Test dummyTest;
+    public static io.hyperfoil.tools.horreum.entity.json.TestDTO dummyTest;
 
 
     @Override
@@ -129,7 +129,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
             dummyTest = null;
         }
         Assertions.assertNull(dummyTest);
-        io.hyperfoil.tools.horreum.entity.json.Test test = new io.hyperfoil.tools.horreum.entity.json.Test();
+        io.hyperfoil.tools.horreum.entity.json.TestDTO test = new io.hyperfoil.tools.horreum.entity.json.TestDTO();
         test.name = "test" ;
         test.owner = "dev-team";
         test.description = "This is a dummy test";

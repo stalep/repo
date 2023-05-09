@@ -1,7 +1,7 @@
 package io.hyperfoil.tools;
 
 import io.hyperfoil.tools.auth.KeycloakClientRequestFilter;
-import io.hyperfoil.tools.horreum.api.*;
+import io.hyperfoil.tools.horreum.services.*;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;

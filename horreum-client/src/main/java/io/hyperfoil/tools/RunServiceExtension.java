@@ -81,6 +81,11 @@ public class RunServiceExtension implements RunService {
       return delegate.addRunFromData(start, stop, test, owner, access, token, schemaUri, description, data);
    }
 
+   @Override
+   public Response addRunFromData(String start, String stop, String test, String owner, Access access, String token, String schemaUri, String description, org.jboss.resteasy.reactive.multipart.FileUpload data, org.jboss.resteasy.reactive.multipart.FileUpload metadata) {
+      return delegate.addRunFromData(start, stop, test, owner, access, token, schemaUri, description, data, metadata);
+   }
+
    public Response addRunFromData(String start, String stop, String test, String owner, Access access, String token, String schemaUri, String description, JsonNode data, JsonNode... metadata) {
       MultipartFormDataOutput multipart = new MultipartFormDataOutput();
       multipart.addFormData("data", data, MediaType.APPLICATION_JSON_TYPE, "data.json");
