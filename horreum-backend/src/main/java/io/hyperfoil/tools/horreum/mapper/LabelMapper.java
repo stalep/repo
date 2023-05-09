@@ -1,14 +1,14 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.data.LabelDAO;
-import io.hyperfoil.tools.horreum.api.data.LabelDTO;
+import io.hyperfoil.tools.horreum.api.data.Label;
 import io.hyperfoil.tools.horreum.entity.data.SchemaDAO;
 
 import java.util.stream.Collectors;
 
 public class LabelMapper {
-    public static LabelDTO from(LabelDAO l) {
-        LabelDTO dto = new LabelDTO();
+    public static Label from(LabelDAO l) {
+        Label dto = new Label();
         dto.id = l.id;
         dto.name = l.name;
         dto.function = l.function;
@@ -22,7 +22,7 @@ public class LabelMapper {
         return dto;
     }
 
-    public static LabelDAO to(LabelDTO dto) {
+    public static LabelDAO to(Label dto) {
         LabelDAO l = new LabelDAO();
         l.id = dto.id;
         l.name = dto.name;
@@ -38,8 +38,8 @@ public class LabelMapper {
         return l;
     }
 
-    public static LabelDTO.Value fromValue(LabelDAO.Value v) {
-        LabelDTO.Value dto = new LabelDTO.Value();
+    public static Label.Value fromValue(LabelDAO.Value v) {
+        Label.Value dto = new Label.Value();
         dto.labelId = v.labelId;
         dto.value = v.value;
         dto.datasetId = v.datasetId;

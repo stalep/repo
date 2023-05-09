@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 
-import io.hyperfoil.tools.horreum.api.data.TestDTO;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -32,7 +32,7 @@ public class ActionServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testFailingHttp(TestInfo testInfo) {
-      TestDTO test = createTest(createExampleTest(getTestName(testInfo)));
+      Test test = createTest(createExampleTest(getTestName(testInfo)));
 
       addAllowedSite("http://some-non-existent-domain.com");
       addTestHttpAction(test, RunDAO.EVENT_NEW, "http://some-non-existent-domain.com");

@@ -1,16 +1,15 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.ValidationError;
-import io.hyperfoil.tools.horreum.api.data.ValidationErrorDTO;
+import io.hyperfoil.tools.horreum.api.data.ValidationError;
 import io.hyperfoil.tools.horreum.entity.data.RunDAO;
-import io.hyperfoil.tools.horreum.api.data.RunDTO;
+import io.hyperfoil.tools.horreum.api.data.Run;
 
 import java.util.stream.Collectors;
 
 public class RunMapper {
 
-    public static RunDTO from(RunDAO run) {
-        RunDTO dto = new RunDTO();
+    public static Run from(RunDAO run) {
+        Run dto = new Run();
         dto.id = run.id;
         dto.start = run.start;
         dto.stop = run.stop;
@@ -29,7 +28,7 @@ public class RunMapper {
         return dto;
     }
 
-    public static RunDAO to(RunDTO dto) {
+    public static RunDAO to(Run dto) {
        RunDAO run = new RunDAO();
        run.id = dto.id;
        run.start = dto.start;
@@ -46,15 +45,15 @@ public class RunMapper {
        return run;
     }
 
-    public static ValidationErrorDTO fromValidationError(ValidationError ve) {
-        ValidationErrorDTO dto = new ValidationErrorDTO();
+    public static ValidationError fromValidationError(io.hyperfoil.tools.horreum.entity.ValidationError ve) {
+        ValidationError dto = new ValidationError();
         dto.schemaId = ve.getSchemaId();
         dto.error = ve.error;
         return dto;
     }
 
-    public static ValidationError toValidationError(ValidationErrorDTO dto) {
-        ValidationError ve = new ValidationError();
+    public static io.hyperfoil.tools.horreum.entity.ValidationError toValidationError(ValidationError dto) {
+        io.hyperfoil.tools.horreum.entity.ValidationError ve = new io.hyperfoil.tools.horreum.entity.ValidationError();
         ve.error = dto.error;
 
         return ve;

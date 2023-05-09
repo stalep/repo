@@ -13,7 +13,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import io.hyperfoil.tools.horreum.api.alerting.WatchDTO;
+import io.hyperfoil.tools.horreum.api.alerting.Watch;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
 @Consumes(MediaType.APPLICATION_JSON)
@@ -26,11 +26,11 @@ public interface SubscriptionService {
 
    @GET
    @Path("/{testId}")
-   WatchDTO get(@PathParam("testId") int testId);
+   Watch get(@PathParam("testId") int testId);
 
    @POST
    @Path("/{testid}")
-   void update(@PathParam("testid") int testId, @RequestBody(required = true) WatchDTO watch);
+   void update(@PathParam("testid") int testId, @RequestBody(required = true) Watch watch);
 
    @POST
    @Path("/{testid}/add")

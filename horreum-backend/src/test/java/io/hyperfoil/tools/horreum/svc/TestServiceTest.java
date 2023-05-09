@@ -15,8 +15,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import io.hyperfoil.tools.horreum.api.alerting.WatchDTO;
+import io.hyperfoil.tools.horreum.api.alerting.Watch;
 import io.hyperfoil.tools.horreum.api.data.*;
+import io.hyperfoil.tools.horreum.api.data.Extractor;
+import io.hyperfoil.tools.horreum.api.data.ViewComponent;
 import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import org.hibernate.query.NativeQuery;
@@ -48,7 +50,7 @@ public class TestServiceTest extends BaseServiceTest {
    @org.junit.jupiter.api.Test
    public void testCreateDelete(TestInfo info) throws InterruptedException {
 
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      Test test = createTest(createExampleTest(getTestName(info)));
       try (CloseMe ignored = roleManager.withRoles(Arrays.asList(TESTER_ROLES))) {
          assertNotNull(TestDAO.findById(test.id));
       }
@@ -73,8 +75,8 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testRecalculate(TestInfo info) throws InterruptedException {
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
-      SchemaDTO schema = createExampleSchema(info);
+      Test test = createTest(createExampleTest(getTestName(info)));
+      Schema schema = createExampleSchema(info);
 
       BlockingQueue<DataSetDAO.EventNew> newDatasetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       final int NUM_DATASETS = 5;
@@ -112,7 +114,7 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testAddTestAction(TestInfo info) {
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      Test test = createTest(createExampleTest(getTestName(info)));
       addTestHttpAction(test, RunDAO.EVENT_NEW, "https://attacker.com").then().statusCode(400);
 
       addAllowedSite("https://example.com");
@@ -126,18 +128,18 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testUpdateView(TestInfo info) throws InterruptedException {
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
-      SchemaDTO schema = createExampleSchema(info);
+      Test test = createTest(createExampleTest(getTestName(info)));
+      Schema schema = createExampleSchema(info);
 
       BlockingQueue<DataSetDAO.EventNew> newDatasetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       uploadRun(runWithValue(42, schema), test.name);
       DataSetDAO.EventNew event = newDatasetQueue.poll(10, TimeUnit.SECONDS);
       assertNotNull(event);
 
-      ViewComponentDTO vc = new ViewComponentDTO();
+      ViewComponent vc = new ViewComponent();
       vc.headerName = "Foobar";
       vc.labels = JsonNodeFactory.instance.arrayNode().add("value");
-      ViewDTO defaultView = test.views.stream().filter(v -> "Default".equals(v.name)).findFirst().orElseThrow();
+      View defaultView = test.views.stream().filter(v -> "Default".equals(v.name)).findFirst().orElseThrow();
       defaultView.components.add(vc);
       updateView(test.id, defaultView);
 
@@ -152,7 +154,7 @@ public class TestServiceTest extends BaseServiceTest {
       });
    }
 
-   private void updateView(int testId, ViewDTO view) {
+   private void updateView(int testId, View view) {
       Integer viewId = jsonRequest().body(view).post("/api/test/" + testId + "/view")
             .then().statusCode(200).extract().body().as(Integer.class);
       if (view.id != null) {
@@ -162,8 +164,8 @@ public class TestServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testLabelValues(TestInfo info) throws InterruptedException {
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
-      SchemaDTO schema = createExampleSchema(info);
+      Test test = createTest(createExampleTest(getTestName(info)));
+      Schema schema = createExampleSchema(info);
 
       BlockingQueue<DataSetDAO.LabelsUpdatedEvent> newDatasetQueue = eventConsumerQueue(DataSetDAO.LabelsUpdatedEvent.class, DataSetDAO.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
       uploadRun(runWithValue(42, schema), test.name);
@@ -192,15 +194,15 @@ public class TestServiceTest extends BaseServiceTest {
    }
 
    private void testImportExport(boolean wipe) {
-      SchemaDTO schema = createSchema("Example", "urn:example:1.0");
-      TransformerDTO transformer = createTransformer("Foobar", schema, null, new ExtractorDTO("foo", "$.foo", false));
+      Schema schema = createSchema("Example", "urn:example:1.0");
+      Transformer transformer = createTransformer("Foobar", schema, null, new Extractor("foo", "$.foo", false));
 
-      TestDTO test = createTest(createExampleTest("to-be-exported"));
+      Test test = createTest(createExampleTest("to-be-exported"));
       addToken(test, 5, "some-secret-string");
       addTransformer(test, transformer);
-      ViewDTO view = new ViewDTO();
+      View view = new View();
       view.name = "Another";
-      ViewComponentDTO vc = new ViewComponentDTO();
+      ViewComponent vc = new ViewComponent();
       vc.labels = JsonNodeFactory.instance.arrayNode().add("foo");
       vc.headerName = "Some foo";
       view.components = Collections.singletonList(vc);
@@ -246,8 +248,8 @@ public class TestServiceTest extends BaseServiceTest {
          validateDatabaseContents(db);
    }
 
-   private void addSubscription(TestDTO test) {
-      WatchDTO watch = new WatchDTO();
+   private void addSubscription(Test test) {
+      Watch watch = new Watch();
       watch.testId = test.id;
       watch.users = Arrays.asList("john", "bill");
       watch.teams = Collections.singletonList("dev-team");

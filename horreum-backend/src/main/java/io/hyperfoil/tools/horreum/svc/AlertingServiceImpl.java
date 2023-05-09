@@ -239,7 +239,7 @@ public class AlertingServiceImpl implements AlertingService {
    }
 
    private void recalculateMissingDataRules(DataSetDAO dataset) {
-      MissingDataRuleResult.deleteForDataset(dataset.id);
+      MissingDataRuleResultDAO.deleteForDataset(dataset.id);
       @SuppressWarnings("unchecked") List<Object[]> ruleValues = em.createNativeQuery(LOOKUP_RULE_LABEL_VALUES)
             .setParameter(1, dataset.id).setParameter(2, dataset.testid)
             .unwrap(NativeQuery.class)
@@ -266,7 +266,7 @@ public class AlertingServiceImpl implements AlertingService {
    }
 
    private void createMissingDataRuleResult(DataSetDAO dataset, int ruleId) {
-      new MissingDataRuleResult(ruleId, dataset.id, dataset.start).persist();
+      new MissingDataRuleResultDAO(ruleId, dataset.id, dataset.start).persist();
    }
 
    @PostConstruct
@@ -393,7 +393,7 @@ public class AlertingServiceImpl implements AlertingService {
          log.debugf("Importing %d change detection variables for test %d", variablesNode.size(), testId);
          for (var node : variablesNode) {
             try {
-               VariableDAO variable = VariableMapper.to(Util.OBJECT_MAPPER.treeToValue(node, VariableDTO.class));
+               VariableDAO variable = VariableMapper.to(Util.OBJECT_MAPPER.treeToValue(node, Variable.class));
                variable.testId = testId;
                variable.ensureLinked();
                if(forceUseTestId) {
@@ -417,13 +417,13 @@ public class AlertingServiceImpl implements AlertingService {
          for (var node : rulesNode) {
             try {
                if(forceUseTestId) {
-                  MissingDataRuleDTO dto = Util.OBJECT_MAPPER.treeToValue(node, MissingDataRuleDTO.class);
+                  MissingDataRule dto = Util.OBJECT_MAPPER.treeToValue(node, MissingDataRule.class);
                   dto.testId = testId;
                   dto.id = null;
                   em.persist(MissingDataRuleMapper.to(dto));
                }
                else
-                  em.merge(MissingDataRuleMapper.to(Util.OBJECT_MAPPER.treeToValue(node, MissingDataRuleDTO.class)));
+                  em.merge(MissingDataRuleMapper.to(Util.OBJECT_MAPPER.treeToValue(node, MissingDataRule.class)));
             } catch (JsonProcessingException e) {
                throw ServiceException.badRequest("Cannot deserialize missing data rule with id '" + node.path("id").asText() + "': " + e.getMessage());
             }
@@ -733,7 +733,7 @@ public class AlertingServiceImpl implements AlertingService {
    @Override
    @WithRoles
    @PermitAll
-   public List<VariableDTO> variables(Integer testId) {
+   public List<Variable> variables(Integer testId) {
       List<VariableDAO> variables;
       if (testId != null) {
          variables = VariableDAO.list("testid", testId);
@@ -747,8 +747,8 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles
    @RolesAllowed("tester")
    @Transactional
-   public void updateVariables(int testId, List<VariableDTO> variablesDTO) {
-      for (VariableDTO v : variablesDTO) {
+   public void updateVariables(int testId, List<Variable> variablesDTO) {
+      for (Variable v : variablesDTO) {
          if (v.name == null || v.name.isBlank()) {
             throw ServiceException.badRequest("Variable name is mandatory!");
          } else if (v.labels == null || !v.labels.isArray() ||
@@ -945,7 +945,7 @@ public class AlertingServiceImpl implements AlertingService {
    @Override
    @WithRoles
    @PermitAll
-   public List<ChangeDTO> changes(int varId, String fingerprint) {
+   public List<Change> changes(int varId, String fingerprint) {
       VariableDAO v = VariableDAO.findById(varId);
       if (v == null) {
          throw ServiceException.notFound("Variable " + varId + " not found");
@@ -968,7 +968,7 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles
    @RolesAllowed(Roles.TESTER)
    @Transactional
-   public void updateChange(int id, ChangeDTO apiChange) {
+   public void updateChange(int id, Change apiChange) {
       try {
          if (id != apiChange.id) {
             throw ServiceException.badRequest("Path ID and entity don't match");
@@ -1156,7 +1156,7 @@ public class AlertingServiceImpl implements AlertingService {
    @PermitAll
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Override
-   public List<RunExpectationDTO> expectations() {
+   public List<RunExpectation> expectations() {
       if (!isTest.orElse(false)) {
          throw ServiceException.notFound("Not available without test mode.");
       }
@@ -1194,7 +1194,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @PermitAll
    @Override
-   public List<ChangeDetectionDTO> defaultChangeDetectionConfigs() {
+   public List<ChangeDetection> defaultChangeDetectionConfigs() {
       ChangeDetectionDAO lastDatapoint = new ChangeDetectionDAO();
       lastDatapoint.model = RelativeDifferenceChangeDetectionModel.NAME;
       lastDatapoint.config = JsonNodeFactory.instance.objectNode()
@@ -1208,7 +1208,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles
    @Override
-   public List<MissingDataRuleDTO> missingDataRules(int testId) {
+   public List<MissingDataRule> missingDataRules(int testId) {
       if (testId <= 0) {
          throw ServiceException.badRequest("Invalid test ID: " + testId);
       }
@@ -1219,7 +1219,7 @@ public class AlertingServiceImpl implements AlertingService {
    @WithRoles
    @Transactional
    @Override
-   public int updateMissingDataRule(int testId, MissingDataRuleDTO dto) {
+   public int updateMissingDataRule(int testId, MissingDataRule dto) {
       MissingDataRuleDAO rule = MissingDataRuleMapper.to(dto);
       // check test existence and ownership
       testService.getTestForUpdate(testId);
@@ -1290,7 +1290,7 @@ public class AlertingServiceImpl implements AlertingService {
          );
       }
       if (match) {
-         new MissingDataRuleResult(rule.id, datasetId, timestamp).persist();
+         new MissingDataRuleResultDAO(rule.id, datasetId, timestamp).persist();
       }
    }
 

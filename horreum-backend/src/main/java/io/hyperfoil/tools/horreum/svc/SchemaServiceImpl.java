@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.horreum.svc;
 
 import io.hyperfoil.tools.horreum.api.data.*;
+import io.hyperfoil.tools.horreum.api.data.Extractor;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.LabelMapper;
 import io.hyperfoil.tools.horreum.mapper.SchemaMapper;
@@ -131,7 +132,7 @@ public class SchemaServiceImpl implements SchemaService {
    @WithRoles
    @PermitAll
    @Override
-   public SchemaDTO getSchema(int id, String token){
+   public Schema getSchema(int id, String token){
       SchemaDAO schema = SchemaDAO.find("id", id).firstResult();
       if (schema == null) {
          throw ServiceException.notFound("Schema not found");
@@ -152,7 +153,7 @@ public class SchemaServiceImpl implements SchemaService {
    @WithRoles
    @Transactional
    @Override
-   public Integer add(SchemaDTO schemaDTO){
+   public Integer add(Schema schemaDTO){
       if (schemaDTO.uri == null || Arrays.stream(ALL_URNS).noneMatch(scheme -> schemaDTO.uri.startsWith(scheme + ":"))) {
          throw ServiceException.badRequest("Please use URI starting with one of these schemes: " + Arrays.toString(ALL_URNS));
       }
@@ -186,7 +187,7 @@ public class SchemaServiceImpl implements SchemaService {
    @PermitAll
    @WithRoles
    @Override
-   public List<SchemaDTO> list(Integer limit, Integer page, String sort, SortDirection direction) {
+   public List<Schema> list(Integer limit, Integer page, String sort, SortDirection direction) {
       if (sort == null || sort.isEmpty()) {
          sort = "name";
       }
@@ -493,7 +494,7 @@ public class SchemaServiceImpl implements SchemaService {
    @PermitAll
    @WithRoles
    @Override
-   public List<TransformerDTO> listTransformers(int schemaId) {
+   public List<Transformer> listTransformers(int schemaId) {
       List<TransformerDAO> transformers = TransformerDAO.find("schema_id", Sort.by("name"), schemaId).list();
       return transformers.stream().map(TransformerMapper::from).collect(Collectors.toList());
    }
@@ -502,7 +503,7 @@ public class SchemaServiceImpl implements SchemaService {
    @WithRoles
    @Transactional
    @Override
-   public int addOrUpdateTransformer(int schemaId, TransformerDTO transformerDTO) {
+   public int addOrUpdateTransformer(int schemaId, Transformer transformerDTO) {
       if (!identity.hasRole(transformerDTO.owner)) {
          throw ServiceException.forbidden("This user is not a member of team " + transformerDTO.owner);
       }
@@ -541,8 +542,8 @@ public class SchemaServiceImpl implements SchemaService {
       return transformer.id;
    }
 
-   private void validateExtractors(Collection<ExtractorDTO> extractors) {
-      for (ExtractorDTO extractor : extractors) {
+   private void validateExtractors(Collection<Extractor> extractors) {
+      for (Extractor extractor : extractors) {
          if (extractor.name == null || extractor.name.isBlank()) {
             throw ServiceException.badRequest("One of the extractors does not have a name!");
          } else if (extractor.jsonpath == null || extractor.jsonpath.isBlank()) {
@@ -583,7 +584,7 @@ public class SchemaServiceImpl implements SchemaService {
 
    @WithRoles
    @Override
-   public List<LabelDTO> labels(int schemaId) {
+   public List<Label> labels(int schemaId) {
       List<LabelDAO> labels = LabelDAO.find("schema_id", schemaId).list();
       return labels.stream().map(LabelMapper::from).collect(Collectors.toList());
    }
@@ -591,7 +592,7 @@ public class SchemaServiceImpl implements SchemaService {
    @WithRoles
    @Transactional
    @Override
-   public Integer addOrUpdateLabel(int schemaId, LabelDTO labelDTO) {
+   public Integer addOrUpdateLabel(int schemaId, Label labelDTO) {
       if (labelDTO == null) {
          throw ServiceException.badRequest("No label?");
       }
@@ -738,7 +739,7 @@ public class SchemaServiceImpl implements SchemaService {
       JsonNode transformers = cfg.remove("transformers");
       SchemaDAO schema;
       try {
-         schema = SchemaMapper.to(Util.OBJECT_MAPPER.treeToValue(cfg, SchemaDTO.class));
+         schema = SchemaMapper.to(Util.OBJECT_MAPPER.treeToValue(cfg, Schema.class));
       } catch (JsonProcessingException e) {
          throw ServiceException.badRequest("Cannot deserialize schema: " + e.getMessage());
       }
@@ -748,7 +749,7 @@ public class SchemaServiceImpl implements SchemaService {
       } else if (labels.isArray()) {
          for (JsonNode node : labels) {
             try {
-               LabelDAO label = LabelMapper.to(Util.OBJECT_MAPPER.treeToValue(node, LabelDTO.class));
+               LabelDAO label = LabelMapper.to(Util.OBJECT_MAPPER.treeToValue(node, Label.class));
                label.schema = schema;
                em.merge(label);
             } catch (JsonProcessingException e) {
@@ -763,7 +764,7 @@ public class SchemaServiceImpl implements SchemaService {
       } else if (transformers.isArray()) {
          for (JsonNode node : transformers) {
             try {
-               TransformerDAO transformer = TransformerMapper.to(Util.OBJECT_MAPPER.treeToValue(node, TransformerDTO.class));
+               TransformerDAO transformer = TransformerMapper.to(Util.OBJECT_MAPPER.treeToValue(node, Transformer.class));
                transformer.schema = schema;
                em.merge(transformer);
             } catch (JsonProcessingException e) {

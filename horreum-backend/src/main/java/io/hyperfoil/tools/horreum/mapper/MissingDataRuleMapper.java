@@ -1,12 +1,12 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.MissingDataRuleDAO;
-import io.hyperfoil.tools.horreum.api.alerting.MissingDataRuleDTO;
+import io.hyperfoil.tools.horreum.api.alerting.MissingDataRule;
 import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 
 public class MissingDataRuleMapper {
-    public static MissingDataRuleDTO from(MissingDataRuleDAO rule) {
-        MissingDataRuleDTO dto = new MissingDataRuleDTO();
+    public static MissingDataRule from(MissingDataRuleDAO rule) {
+        MissingDataRule dto = new MissingDataRule();
         dto.id = rule.id;
         dto.name = rule.name;
         dto.condition = rule.condition;
@@ -18,7 +18,7 @@ public class MissingDataRuleMapper {
         return dto;
     }
 
-    public static MissingDataRuleDAO to(MissingDataRuleDTO dto) {
+    public static MissingDataRuleDAO to(MissingDataRule dto) {
         MissingDataRuleDAO rule = new MissingDataRuleDAO();
         rule.id = dto.id;
         rule.name = dto.name;

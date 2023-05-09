@@ -46,7 +46,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 import com.vladmihalcea.hibernate.type.util.MapResultTransformer;
 import io.hyperfoil.tools.horreum.api.data.Access;
-import io.hyperfoil.tools.horreum.api.data.RunDTO;
+import io.hyperfoil.tools.horreum.api.data.Run;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.RunMapper;
 import io.hyperfoil.tools.horreum.api.services.QueryResult;
@@ -325,7 +325,7 @@ public class RunServiceImpl implements RunService {
    @WithToken
    @Transactional
    @Override
-   public Response add(String testNameOrId, String owner, Access access, String token, RunDTO run) {
+   public Response add(String testNameOrId, String owner, Access access, String token, Run run) {
       if (owner != null) {
          run.owner = owner;
       }

@@ -25,7 +25,9 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.hyperfoil.tools.horreum.api.data.*;
+import io.hyperfoil.tools.horreum.api.data.Extractor;
 import io.hyperfoil.tools.horreum.entity.data.*;
+import io.hyperfoil.tools.horreum.entity.data.ViewComponent;
 import io.hyperfoil.tools.horreum.mapper.LabelMapper;
 import io.hyperfoil.tools.horreum.api.services.DatasetService;
 import io.hyperfoil.tools.horreum.api.services.QueryResult;
@@ -90,9 +92,9 @@ public class DatasetServiceTest extends BaseServiceTest {
    @org.junit.jupiter.api.Test
    public void testDatasetLabelsSingle() {
       withExampleSchemas((schemas) -> {
-         int labelA = addLabel(schemas[0], "value", null, new ExtractorDTO("value", "$.value", false));
-         int labelB = addLabel(schemas[1], "value", "v => v + 1", new ExtractorDTO("value", "$.value", false));
-         List<LabelDTO.Value> values = withLabelValues(createABData());
+         int labelA = addLabel(schemas[0], "value", null, new Extractor("value", "$.value", false));
+         int labelB = addLabel(schemas[1], "value", "v => v + 1", new Extractor("value", "$.value", false));
+         List<Label.Value> values = withLabelValues(createABData());
          assertEquals(2, values.size());
          assertEquals(24, values.stream().filter(v -> v.labelId == labelA).map(v -> v.value.numberValue()).findFirst().orElse(null));
          assertEquals(43, values.stream().filter(v -> v.labelId == labelB).map(v -> v.value.numberValue()).findFirst().orElse(null));
@@ -119,18 +121,18 @@ public class DatasetServiceTest extends BaseServiceTest {
    public void testDatasetLabelsMulti() {
       withExampleSchemas((schemas) -> {
          int labelSum = addLabel(schemas[0], "Sum", "({ a, b }) => a + b",
-               new ExtractorDTO("a", "$.a", false), new ExtractorDTO("b", "$.b", false));
+               new Extractor("a", "$.a", false), new Extractor("b", "$.b", false));
          int labelSingle = addLabel(schemas[0], "Single", null,
-               new ExtractorDTO("a", "$.a", false));
+               new Extractor("a", "$.a", false));
          int labelObject = addLabel(schemas[0], "Object", null,
-               new ExtractorDTO("x", "$.a", false), new ExtractorDTO("y", "$.b", false));
+               new Extractor("x", "$.a", false), new Extractor("y", "$.b", false));
          int labelArray = addLabel(schemas[1], "Array", null,
-               new ExtractorDTO("array", "$.array[*].y", true));
+               new Extractor("array", "$.array[*].y", true));
          int labelReduce = addLabel(schemas[1], "Reduce", "array => array.reduce((a, b) => a + b)",
-               new ExtractorDTO("array", "$.array[*].y", true));
+               new Extractor("array", "$.array[*].y", true));
          int labelNoExtractor = addLabel(schemas[0], "Nothing", "empty => 42");
 
-         List<LabelDTO.Value> values = withLabelValues(createXYData());
+         List<Label.Value> values = withLabelValues(createXYData());
          assertEquals(6, values.size());
          assertEquals(3, values.stream().filter(v -> v.labelId == labelSum).map(v -> v.value.numberValue()).findFirst().orElse(null));
          assertEquals(1, values.stream().filter(v -> v.labelId == labelSingle).map(v -> v.value.numberValue()).findFirst().orElse(null));
@@ -146,21 +148,21 @@ public class DatasetServiceTest extends BaseServiceTest {
    public void testDatasetLabelsNotFound() {
       withExampleSchemas((schemas) -> {
          int labelSingle = addLabel(schemas[0], "Single", null,
-               new ExtractorDTO("value", "$.thisPathDoesNotExist", false));
+               new Extractor("value", "$.thisPathDoesNotExist", false));
          int labelSingleFunc = addLabel(schemas[0], "SingleFunc", "x => x === null",
-               new ExtractorDTO("value", "$.thisPathDoesNotExist", false));
+               new Extractor("value", "$.thisPathDoesNotExist", false));
          int labelSingleArray = addLabel(schemas[0], "SingleArray", "x => Array.isArray(x) && x.length === 0",
-               new ExtractorDTO("value", "$.thisPathDoesNotExist", true));
-         int labelMulti = addLabel(schemas[0], "Multi", null, new ExtractorDTO("a", "$.a", false),
-               new ExtractorDTO("value", "$.thisPathDoesNotExist", false));
+               new Extractor("value", "$.thisPathDoesNotExist", true));
+         int labelMulti = addLabel(schemas[0], "Multi", null, new Extractor("a", "$.a", false),
+               new Extractor("value", "$.thisPathDoesNotExist", false));
          int labelMultiFunc = addLabel(schemas[0], "MultiFunc", "({a, value}) => a === 1 && value === null",
-               new ExtractorDTO("a", "$.a", false), new ExtractorDTO("value", "$.thisPathDoesNotExist", false));
+               new Extractor("a", "$.a", false), new Extractor("value", "$.thisPathDoesNotExist", false));
          int labelMultiArray = addLabel(schemas[0], "MultiArray", "({a, value}) => a === 1 && Array.isArray(value) && value.length === 0",
-               new ExtractorDTO("a", "$.a", false), new ExtractorDTO("value", "$.thisPathDoesNotExist", true));
+               new Extractor("a", "$.a", false), new Extractor("value", "$.thisPathDoesNotExist", true));
 
-         List<LabelDTO.Value> values = withLabelValues(createXYData());
+         List<Label.Value> values = withLabelValues(createXYData());
          assertEquals(6, values.size());
-         LabelDTO.Value singleValue = values.stream().filter(v -> v.labelId == labelSingle).findFirst().orElseThrow();
+         Label.Value singleValue = values.stream().filter(v -> v.labelId == labelSingle).findFirst().orElseThrow();
          assertEquals(JsonNodeFactory.instance.nullNode(), singleValue.value);
          BooleanNode trueNode = JsonNodeFactory.instance.booleanNode(true);
          assertEquals(trueNode, values.stream().filter(v -> v.labelId == labelSingleFunc).map(v -> v.value).findFirst().orElse(null));
@@ -174,10 +176,10 @@ public class DatasetServiceTest extends BaseServiceTest {
    @org.junit.jupiter.api.Test
    public void testDatasetLabelChanged() {
       withExampleSchemas((schemas) -> {
-         int labelA = addLabel(schemas[0], "A", null, new ExtractorDTO("value", "$.value", false));
-         int labelB = addLabel(schemas[1], "B", "v => v + 1", new ExtractorDTO("value", "$.value", false));
-         int labelC = addLabel(schemas[1], "C", null, new ExtractorDTO("value", "$.value", false));
-         TestDTO test = createTest(createExampleTest("dummy"));
+         int labelA = addLabel(schemas[0], "A", null, new Extractor("value", "$.value", false));
+         int labelB = addLabel(schemas[1], "B", "v => v + 1", new Extractor("value", "$.value", false));
+         int labelC = addLabel(schemas[1], "C", null, new Extractor("value", "$.value", false));
+         Test test = createTest(createExampleTest("dummy"));
          BlockingQueue<DataSetDAO.LabelsUpdatedEvent> updateQueue = eventConsumerQueue(DataSetDAO.LabelsUpdatedEvent.class, DataSetDAO.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
          withExampleDataset(test, createABData(), ds -> {
             waitForUpdate(updateQueue, ds);
@@ -188,8 +190,8 @@ public class DatasetServiceTest extends BaseServiceTest {
             assertEquals(42, values.stream().filter(v -> v.labelId == labelC).map(v -> v.value.numberValue()).findFirst().orElse(null));
             em.clear();
 
-            updateLabel(schemas[0], labelA, "value", null, new ExtractorDTO("value", "$.value", true));
-            updateLabel(schemas[1], labelB, "value", "({ x, y }) => x + y", new ExtractorDTO("x", "$.value", false), new ExtractorDTO("y", "$.value", false));
+            updateLabel(schemas[0], labelA, "value", null, new Extractor("value", "$.value", true));
+            updateLabel(schemas[1], labelB, "value", "({ x, y }) => x + y", new Extractor("x", "$.value", false), new Extractor("y", "$.value", false));
             deleteLabel(schemas[1], labelC);
             waitForUpdate(updateQueue, ds);
             waitForUpdate(updateQueue, ds);
@@ -206,8 +208,8 @@ public class DatasetServiceTest extends BaseServiceTest {
       }, "urn:A", "urn:B");
    }
 
-   private List<LabelDTO.Value> withLabelValues(ArrayNode data) {
-      TestDTO test = createTest(createExampleTest("dummy"));
+   private List<Label.Value> withLabelValues(ArrayNode data) {
+      Test test = createTest(createExampleTest("dummy"));
       BlockingQueue<DataSetDAO.LabelsUpdatedEvent> updateQueue = eventConsumerQueue(DataSetDAO.LabelsUpdatedEvent.class, DataSetDAO.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
       return withExampleDataset(test, data, ds -> {
          waitForUpdate(updateQueue, ds);
@@ -217,7 +219,7 @@ public class DatasetServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testSchemaAfterData() throws InterruptedException {
-      TestDTO test = createTest(createExampleTest("xxx"));
+      Test test = createTest(createExampleTest("xxx"));
       BlockingQueue<DataSetDAO.EventNew> dsQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       BlockingQueue<DataSetDAO.LabelsUpdatedEvent> labelQueue = eventConsumerQueue(DataSetDAO.LabelsUpdatedEvent.class, DataSetDAO.EVENT_LABELS_UPDATED, e -> checkTestId(e.datasetId, test.id));
       JsonNode data = JsonNodeFactory.instance.arrayNode()
@@ -234,7 +236,7 @@ public class DatasetServiceTest extends BaseServiceTest {
       assertEquals(firstEvent.dataset.id, firstUpdate.datasetId);
 
       assertEquals(0, ((Number) em.createNativeQuery("SELECT count(*) FROM dataset_schemas").getSingleResult()).intValue());
-      SchemaDTO schema = createSchema("Foobar", "urn:foobar");
+      Schema schema = createSchema("Foobar", "urn:foobar");
 
       DataSetDAO.EventNew secondEvent = dsQueue.poll(10, TimeUnit.SECONDS);
       assertNotNull(secondEvent);
@@ -251,7 +253,7 @@ public class DatasetServiceTest extends BaseServiceTest {
       assertEquals(0, ds.get(0)[1]);
       assertEquals(0, ((Number) em.createNativeQuery("SELECT count(*) FROM label_values").getSingleResult()).intValue());
 
-      addLabel(schema, "value", null, new ExtractorDTO("value", "$.value", false));
+      addLabel(schema, "value", null, new Extractor("value", "$.value", false));
       // not empty anymore
       DataSetDAO.LabelsUpdatedEvent thirdUpdate = labelQueue.poll(10, TimeUnit.SECONDS);
       assertNotNull(thirdUpdate);
@@ -264,7 +266,7 @@ public class DatasetServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testDatasetView() {
-      TestDTO test = createTest(createExampleTest("dummy"));
+      Test test = createTest(createExampleTest("dummy"));
       Util.withTx(tm, () -> {
          try (CloseMe ignored = roleManager.withRoles(Arrays.asList(TESTER_ROLES))) {
             ViewDAO view = ViewDAO.findById(test.views.iterator().next().id);
@@ -285,7 +287,7 @@ public class DatasetServiceTest extends BaseServiceTest {
          return null;
       });
       withExampleSchemas((schemas) -> {
-         ExtractorDTO valuePath = new ExtractorDTO("value", "$.value", false);
+         Extractor valuePath = new Extractor("value", "$.value", false);
          int labelA = addLabel(schemas[0], "a", null, valuePath);
          int labelB = addLabel(schemas[1], "b", null, valuePath);
          // view update should happen in the same transaction as labels update so we can use the event
@@ -337,8 +339,8 @@ public class DatasetServiceTest extends BaseServiceTest {
       return datasets;
    }
 
-   private void withExampleSchemas(Consumer<SchemaDTO[]> testLogic, String... schemas) {
-      SchemaDTO[] instances = Arrays.stream(schemas).map(s -> createSchema(s, s)).toArray(SchemaDTO[]::new);
+   private void withExampleSchemas(Consumer<Schema[]> testLogic, String... schemas) {
+      Schema[] instances = Arrays.stream(schemas).map(s -> createSchema(s, s)).toArray(Schema[]::new);
       try {
          testLogic.accept(instances);
       } finally {
@@ -370,15 +372,15 @@ public class DatasetServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testEverythingPrivate() throws InterruptedException {
-      SchemaDTO schema = new SchemaDTO();
+      Schema schema = new Schema();
       schema.owner = TESTER_ROLES[0];
       schema.access = Access.PRIVATE;
       schema.name = "private-schema";
       schema.uri = "urn:private";
       addOrUpdateSchema(schema);
-      postLabel(schema, "value", null, l -> l.access = Access.PRIVATE, new ExtractorDTO("value", "$.value", false));
+      postLabel(schema, "value", null, l -> l.access = Access.PRIVATE, new Extractor("value", "$.value", false));
 
-      TestDTO test = createExampleTest("private-test");
+      Test test = createExampleTest("private-test");
       test.access = Access.PRIVATE;
       test = createTest(test);
       int testId = test.id;

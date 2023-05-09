@@ -14,8 +14,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import io.hyperfoil.tools.horreum.api.SortDirection;
-import io.hyperfoil.tools.horreum.api.data.ActionDTO;
-import io.hyperfoil.tools.horreum.api.data.AllowedSiteDTO;
+import io.hyperfoil.tools.horreum.api.data.Action;
+import io.hyperfoil.tools.horreum.api.data.AllowedSite;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
 @Path("/api/action")
@@ -23,11 +23,11 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 @Produces(MediaType.APPLICATION_JSON)
 public interface ActionService {
    @POST
-   ActionDTO add(ActionDTO action);
+   Action add(Action action);
 
    @GET
    @Path("{id}")
-   ActionDTO get(@PathParam("id") int id);
+   Action get(@PathParam("id") int id);
 
    @DELETE
    @Path("{id}")
@@ -35,23 +35,23 @@ public interface ActionService {
 
    @GET
    @Path("list")
-   List<ActionDTO> list(@QueryParam("limit") Integer limit,
+   List<Action> list(@QueryParam("limit") Integer limit,
                      @QueryParam("page") Integer page,
                      @QueryParam("sort") @DefaultValue("id") String sort,
                      @QueryParam("direction") @DefaultValue("Ascending") SortDirection direction);
 
    @GET
    @Path("test/{id}")
-   List<ActionDTO> getTestActions(@PathParam("id") int testId);
+   List<Action> getTestActions(@PathParam("id") int testId);
 
    @GET
    @Path("allowedSites")
-   List<AllowedSiteDTO> allowedSites();
+   List<AllowedSite> allowedSites();
 
    @Consumes("text/plain")
    @POST
    @Path("allowedSites")
-   AllowedSiteDTO addSite(@RequestBody(required = true) String prefix);
+   AllowedSite addSite(@RequestBody(required = true) String prefix);
 
    @DELETE
    @Path("allowedSites/{id}")

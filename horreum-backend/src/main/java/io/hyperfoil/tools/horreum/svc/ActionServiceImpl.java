@@ -1,9 +1,9 @@
 package io.hyperfoil.tools.horreum.svc;
 
-import io.hyperfoil.tools.horreum.api.data.ActionDTO;
-import io.hyperfoil.tools.horreum.api.data.AllowedSiteDTO;
+import io.hyperfoil.tools.horreum.api.data.Action;
+import io.hyperfoil.tools.horreum.api.data.AllowedSite;
 import io.hyperfoil.tools.horreum.entity.alerting.ChangeDAO;
-import io.hyperfoil.tools.horreum.api.alerting.ChangeDTO;
+import io.hyperfoil.tools.horreum.api.alerting.Change;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.ActionMapper;
 import io.hyperfoil.tools.horreum.mapper.AllowedSiteMapper;
@@ -75,7 +75,7 @@ public class ActionServiceImpl implements ActionService {
       messageBus.subscribe(TestDAO.EVENT_NEW, "ActionService", TestDAO.class, this::onNewTest);
       messageBus.subscribe(TestDAO.EVENT_DELETED, "ActionService", TestDAO.class, this::onTestDelete);
       messageBus.subscribe(RunDAO.EVENT_NEW, "ActionService", RunDAO.class, this::onNewRun);
-      messageBus.subscribe(ChangeDTO.EVENT_NEW, "ActionService", ChangeDAO.Event.class, this::onNewChange);
+      messageBus.subscribe(Change.EVENT_NEW, "ActionService", ChangeDAO.Event.class, this::onNewChange);
       messageBus.subscribe(ExperimentService.ExperimentResult.NEW_RESULT, "ActionService", ExperimentService.ExperimentResult.class, this::onNewExperimentResult);
    }
 
@@ -155,7 +155,7 @@ public class ActionServiceImpl implements ActionService {
       executeActions(ChangeDAO.EVENT_NEW, testId, changeEvent, changeEvent.notify);
    }
 
-   void validate(ActionDTO action) {
+   void validate(Action action) {
       ActionPlugin plugin = plugins.get(action.type);
       if (plugin == null) {
          throw ServiceException.badRequest("Unknown hook type " + action.type);
@@ -167,7 +167,7 @@ public class ActionServiceImpl implements ActionService {
    @WithRoles
    @Transactional
    @Override
-   public ActionDTO add(ActionDTO action){
+   public Action add(Action action){
       if (action == null){
          throw ServiceException.badRequest("Send action as request body.");
       }
@@ -212,7 +212,7 @@ public class ActionServiceImpl implements ActionService {
    @RolesAllowed(Roles.ADMIN)
    @WithRoles
    @Override
-   public ActionDTO get(int id){
+   public Action get(int id){
       ActionDAO action =  ActionDAO.find("id", id).firstResult();
       return ActionMapper.from(action);
    }
@@ -237,7 +237,7 @@ public class ActionServiceImpl implements ActionService {
    @RolesAllowed(Roles.ADMIN)
    @WithRoles
    @Override
-   public List<ActionDTO> list(Integer limit, Integer page, String sort, SortDirection direction){
+   public List<Action> list(Integer limit, Integer page, String sort, SortDirection direction){
       Sort.Direction sortDirection = direction == null ? null : Sort.Direction.valueOf(direction.name());
       PanacheQuery<ActionDAO> query = ActionDAO.find("test_id < 0", Sort.by(sort).direction(sortDirection));
       if (limit != null && page != null) {
@@ -250,14 +250,14 @@ public class ActionServiceImpl implements ActionService {
    @RolesAllowed({ Roles.ADMIN, Roles.TESTER})
    @WithRoles
    @Override
-   public List<ActionDTO> getTestActions(int testId) {
+   public List<Action> getTestActions(int testId) {
       List<ActionDAO> testActions = ActionDAO.list("testId", testId);
       return testActions.stream().map(ActionMapper::from).collect(Collectors.toList());
    }
 
    @PermitAll
    @Override
-   public List<AllowedSiteDTO> allowedSites() {
+   public List<AllowedSite> allowedSites() {
       List<AllowedSiteDAO> sites = AllowedSiteDAO.listAll();
       return  sites.stream().map(AllowedSiteMapper::from).collect(Collectors.toList());
    }
@@ -266,7 +266,7 @@ public class ActionServiceImpl implements ActionService {
    @WithRoles
    @Transactional
    @Override
-   public AllowedSiteDTO addSite(String prefix) {
+   public AllowedSite addSite(String prefix) {
       AllowedSiteDAO p = new AllowedSiteDAO();
       // FIXME: fetchival stringifies the body into JSON string :-/
       p.prefix = Util.destringify(prefix);
@@ -315,7 +315,7 @@ public class ActionServiceImpl implements ActionService {
             }
             String secretsEncrypted = ((ObjectNode) node).remove("secrets").textValue();
             try {
-               ActionDAO action = ActionMapper.to(Util.OBJECT_MAPPER.treeToValue(node, ActionDTO.class));
+               ActionDAO action = ActionMapper.to(Util.OBJECT_MAPPER.treeToValue(node, Action.class));
                if(forceUseTestId)
                   action.testId = testId;
                else {

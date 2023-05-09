@@ -11,21 +11,21 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import io.hyperfoil.tools.horreum.api.data.ActionLogDTO;
-import io.hyperfoil.tools.horreum.api.alerting.DatasetLogDTO;
-import io.hyperfoil.tools.horreum.api.alerting.TransformationLogDTO;
+import io.hyperfoil.tools.horreum.api.data.ActionLog;
+import io.hyperfoil.tools.horreum.api.alerting.DatasetLog;
+import io.hyperfoil.tools.horreum.api.alerting.TransformationLog;
 
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/api/log")
 public interface LogService {
    @GET
    @Path("dataset/{source}/{testId}")
-   List<DatasetLogDTO> getDatasetLog(@PathParam("source") String source,
-                                     @PathParam("testId") int testId,
-                                     @QueryParam("level") @DefaultValue("1") int level,
-                                     @QueryParam("datasetId") Integer datasetId,
-                                     @QueryParam("page") Integer page,
-                                     @QueryParam("limit") Integer limit);
+   List<DatasetLog> getDatasetLog(@PathParam("source") String source,
+                                  @PathParam("testId") int testId,
+                                  @QueryParam("level") @DefaultValue("1") int level,
+                                  @QueryParam("datasetId") Integer datasetId,
+                                  @QueryParam("page") Integer page,
+                                  @QueryParam("limit") Integer limit);
 
    @GET
    @Path("dataset/{source}/{testId}/count")
@@ -44,11 +44,11 @@ public interface LogService {
 
    @GET
    @Path("transformation/{testId}")
-   List<TransformationLogDTO> getTransformationLog(@PathParam("testId") int testId,
-                                                   @QueryParam("level") @DefaultValue("1") int level,
-                                                   @QueryParam("runId") Integer runId,
-                                                   @QueryParam("page") Integer page,
-                                                   @QueryParam("limit") Integer limit);
+   List<TransformationLog> getTransformationLog(@PathParam("testId") int testId,
+                                                @QueryParam("level") @DefaultValue("1") int level,
+                                                @QueryParam("runId") Integer runId,
+                                                @QueryParam("page") Integer page,
+                                                @QueryParam("limit") Integer limit);
 
    @GET
    @Path("transformation/{testId}/count")
@@ -65,10 +65,10 @@ public interface LogService {
 
    @GET
    @Path("action/{testId}")
-   List<ActionLogDTO> getActionLog(@PathParam("testId") int testId,
-                                   @QueryParam("level") @DefaultValue("1") int level,
-                                   @QueryParam("page") Integer page,
-                                   @QueryParam("limit") Integer limit);
+   List<ActionLog> getActionLog(@PathParam("testId") int testId,
+                                @QueryParam("level") @DefaultValue("1") int level,
+                                @QueryParam("page") Integer page,
+                                @QueryParam("limit") Integer limit);
 
    @GET
    @Path("action/{testId}/count")

@@ -6,7 +6,7 @@ import static io.restassured.RestAssured.given;
 import javax.ws.rs.core.HttpHeaders;
 
 import io.hyperfoil.tools.horreum.api.data.Access;
-import io.hyperfoil.tools.horreum.api.data.TestDTO;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.entity.data.TestTokenDAO;
 import io.hyperfoil.tools.horreum.server.TokenInterceptor;
 import io.hyperfoil.tools.horreum.test.NoGrafanaProfile;
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Disabled;
 public class TokenAuthTest extends BaseServiceTest {
    @Disabled
    public void testTokenInHeader() {
-      TestDTO test = createExampleTest("private");
+      Test test = createExampleTest("private");
       test.access = Access.PRIVATE;
       test = createTest(test);
 

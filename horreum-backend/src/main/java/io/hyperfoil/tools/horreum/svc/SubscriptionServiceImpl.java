@@ -17,7 +17,7 @@ import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.api.alerting.WatchDTO;
+import io.hyperfoil.tools.horreum.api.alerting.Watch;
 import io.hyperfoil.tools.horreum.mapper.WatchMapper;
 import org.jboss.logging.Logger;
 
@@ -90,7 +90,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
    @RolesAllowed({ Roles.VIEWER, Roles.TESTER, Roles.ADMIN})
    @WithRoles
    @Override
-   public WatchDTO get(int testId) {
+   public Watch get(int testId) {
       WatchDAO watch = WatchDAO.find("test.id = ?1", testId).firstResult();
       if (watch == null) {
          watch = new WatchDAO();
@@ -204,7 +204,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
    @WithRoles
    @Transactional
    @Override
-   public void update(int testId, WatchDTO dto) {
+   public void update(int testId, Watch dto) {
       WatchDAO watch = WatchMapper.to(dto);
       WatchDAO existing = WatchDAO.find("testid", testId).firstResult();
       if (existing == null) {
@@ -265,7 +265,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
          log.infof("Import test %d: no subscriptions", testId);
       } else {
          try {
-            WatchDAO watch = WatchMapper.to(Util.OBJECT_MAPPER.treeToValue(subscriptions, WatchDTO.class));
+            WatchDAO watch = WatchMapper.to(Util.OBJECT_MAPPER.treeToValue(subscriptions, Watch.class));
             watch.test = em.getReference(TestDAO.class, testId);
             em.merge(watch);
          } catch (JsonProcessingException e) {

@@ -12,6 +12,7 @@ import java.util.stream.StreamSupport;
 import javax.ws.rs.core.HttpHeaders;
 
 import io.hyperfoil.tools.horreum.api.data.*;
+import io.hyperfoil.tools.horreum.api.data.Extractor;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import org.junit.jupiter.api.TestInfo;
 
@@ -40,14 +41,14 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationNoSchemaInData(TestInfo info) throws InterruptedException {
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
-      ExtractorDTO path = new ExtractorDTO("foo", "$.value", false);
-      SchemaDTO schema = createExampleSchema(info);
+      Extractor path = new Extractor("foo", "$.value", false);
+      Schema schema = createExampleSchema(info);
 
-      TransformerDTO transformer = createTransformer("acme", schema, "", path);
+      Transformer transformer = createTransformer("acme", schema, "", path);
       addTransformer(test, transformer);
       uploadRun("{\"corporation\":\"acme\"}", test.name);
 
@@ -58,10 +59,10 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationWithoutSchema(TestInfo info) throws InterruptedException {
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      Test test = createTest(createExampleTest(getTestName(info)));
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
 
-      SchemaDTO schema = createExampleSchema(info);
+      Schema schema = createExampleSchema(info);
 
       int runId = uploadRun(runWithValue(42, schema).toString(), test.name);
 
@@ -98,7 +99,7 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationWithoutSchemaInUpload(TestInfo info) throws InterruptedException {
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      Test test = createTest(createExampleTest(getTestName(info)));
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
 
       setTestVariables(test, "Value", "value");
@@ -112,13 +113,13 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationWithoutExtractorsAndBlankFunction(TestInfo info) throws InterruptedException {
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
-      SchemaDTO schema = createExampleSchema(info);
+      Schema schema = createExampleSchema(info);
 
-      TransformerDTO transformer = createTransformer("acme", schema, "");
+      Transformer transformer = createTransformer("acme", schema, "");
       addTransformer(test, transformer);
       uploadRun(runWithValue(42.0d, schema), test.name);
 
@@ -133,14 +134,14 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationWithExtractorAndBlankFunction(TestInfo info) throws InterruptedException {
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
-      SchemaDTO schema = createExampleSchema("AcneCorp", "AcneInc", "AcneRrUs", false);
+      Schema schema = createExampleSchema("AcneCorp", "AcneInc", "AcneRrUs", false);
 
-      ExtractorDTO path = new ExtractorDTO("foo", "$.value", false);
-      TransformerDTO transformer = createTransformer("acme", schema, "", path); // blank function
+      Extractor path = new Extractor("foo", "$.value", false);
+      Transformer transformer = createTransformer("acme", schema, "", path); // blank function
       addTransformer(test, transformer);
       uploadRun(runWithValue(42.0d, schema), test.name);
 
@@ -154,16 +155,16 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationWithNestedSchema(TestInfo info) throws InterruptedException {
-      SchemaDTO acmeSchema = createExampleSchema("AcmeCorp", "AcmeInc", "AcmeRrUs", false);
-      SchemaDTO roadRunnerSchema = createExampleSchema("RoadRunnerCorp", "RoadRunnerInc", "RoadRunnerRrUs", false);
+      Schema acmeSchema = createExampleSchema("AcmeCorp", "AcmeInc", "AcmeRrUs", false);
+      Schema roadRunnerSchema = createExampleSchema("RoadRunnerCorp", "RoadRunnerInc", "RoadRunnerRrUs", false);
 
-      ExtractorDTO acmePath = new ExtractorDTO("foo", "$.value", false);
-      TransformerDTO acmeTransformer = createTransformer("acme", acmeSchema, "value => ({ acme: value })", acmePath);
-      ExtractorDTO roadRunnerPath = new ExtractorDTO("bah", "$.value", false);
-      TransformerDTO roadRunnerTransformer = createTransformer("roadrunner", roadRunnerSchema, "value => ({ outcome: value })", roadRunnerPath);
+      Extractor acmePath = new Extractor("foo", "$.value", false);
+      Transformer acmeTransformer = createTransformer("acme", acmeSchema, "value => ({ acme: value })", acmePath);
+      Extractor roadRunnerPath = new Extractor("bah", "$.value", false);
+      Transformer roadRunnerTransformer = createTransformer("roadrunner", roadRunnerSchema, "value => ({ outcome: value })", roadRunnerPath);
 
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
       addTransformer(test, acmeTransformer, roadRunnerTransformer);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
@@ -185,11 +186,11 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationSingleSchemaTestWithoutTransformer(TestInfo info) throws InterruptedException {
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
-      SchemaDTO acmeSchema = createExampleSchema("AceCorp", "AceInc", "AceRrUs", false);
+      Schema acmeSchema = createExampleSchema("AceCorp", "AceInc", "AceRrUs", false);
 
       uploadRun(runWithValue(42.0d, acmeSchema), test.name);
 
@@ -207,11 +208,11 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationNestedSchemasWithoutTransformers(TestInfo info) throws InterruptedException {
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      Test test = createTest(createExampleTest(getTestName(info)));
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
-      SchemaDTO schemaA = createExampleSchema("Ada", "Ada", "Ada", false);
-      SchemaDTO schemaB = createExampleSchema("Bdb", "Bdb", "Bdb", false);
-      SchemaDTO schemaC = createExampleSchema("Cdc", "Cdc", "Cdc", false);
+      Schema schemaA = createExampleSchema("Ada", "Ada", "Ada", false);
+      Schema schemaB = createExampleSchema("Bdb", "Bdb", "Bdb", false);
+      Schema schemaC = createExampleSchema("Cdc", "Cdc", "Cdc", false);
 
       ObjectNode data = runWithValue(1, schemaA);
       data.set("nestedB", runWithValue(2, schemaB));
@@ -231,7 +232,7 @@ public class RunServiceTest extends BaseServiceTest {
       assertNull(dataSetQueue.poll(50, TimeUnit.MILLISECONDS));
    }
 
-   private JsonNode getBySchema(DataSetDAO dataset, SchemaDTO schemaA) {
+   private JsonNode getBySchema(DataSetDAO dataset, Schema schemaA) {
       return StreamSupport.stream(dataset.data.spliterator(), false)
             .filter(item -> schemaA.uri.equals(item.path("$schema").textValue()))
             .findFirst().orElseThrow(AssertionError::new);
@@ -239,12 +240,12 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationUsingSameSchemaInBothLevelsTestWithoutTransformer(TestInfo info) throws InterruptedException {
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
 
-      SchemaDTO appleSchema = createExampleSchema("AppleCorp", "AppleInc", "AppleRrUs", false);
+      Schema appleSchema = createExampleSchema("AppleCorp", "AppleInc", "AppleRrUs", false);
 
       ObjectNode data = runWithValue(42.0d, appleSchema);
       ObjectNode nested = runWithValue(52.0d, appleSchema);
@@ -270,18 +271,18 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
     public void testTransformationUsingSingleSchemaTransformersProcessScalarPlusArray(TestInfo info) throws InterruptedException {
-      SchemaDTO schema = createExampleSchema("ArrayCorp", "ArrayInc", "ArrayRrUs", false);
-      ExtractorDTO arrayPath = new ExtractorDTO("mheep", "$.values", false);
+      Schema schema = createExampleSchema("ArrayCorp", "ArrayInc", "ArrayRrUs", false);
+      Extractor arrayPath = new Extractor("mheep", "$.values", false);
       String arrayFunction = "mheep => { return mheep.map(x => ({ \"outcome\": x }))}";
 
-      ExtractorDTO scalarPath = new ExtractorDTO("sheep", "$.value", false);
+      Extractor scalarPath = new Extractor("sheep", "$.value", false);
       String scalarFunction = "sheep => { return ({  \"outcome\": { sheep } }) }";
 
-      TransformerDTO arrayTransformer = createTransformer("arrayT", schema, arrayFunction, arrayPath);
-      TransformerDTO scalarTransformer = createTransformer("scalarT", schema, scalarFunction, scalarPath);
+      Transformer arrayTransformer = createTransformer("arrayT", schema, arrayFunction, arrayPath);
+      Transformer scalarTransformer = createTransformer("scalarT", schema, scalarFunction, scalarPath);
 
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
       addTransformer(test, arrayTransformer, scalarTransformer);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
@@ -306,14 +307,14 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationChoosingSchema(TestInfo info) throws InterruptedException {
-      SchemaDTO schemaA = createExampleSchema("Aba", "Aba", "Aba", false);
-      ExtractorDTO path = new ExtractorDTO("value", "$.value", false);
-      TransformerDTO transformerA = createTransformer("A", schemaA, "value => ({\"by\": \"A\"})", path);
+      Schema schemaA = createExampleSchema("Aba", "Aba", "Aba", false);
+      Extractor path = new Extractor("value", "$.value", false);
+      Transformer transformerA = createTransformer("A", schemaA, "value => ({\"by\": \"A\"})", path);
 
-      SchemaDTO schemaB = createExampleSchema("Bcb", "Bcb", "Bcb", false);
-      TransformerDTO transformerB = createTransformer("B", schemaB, "value => ({\"by\": \"B\"})");
+      Schema schemaB = createExampleSchema("Bcb", "Bcb", "Bcb", false);
+      Transformer transformerB = createTransformer("B", schemaB, "value => ({\"by\": \"B\"})");
 
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      Test test = createTest(createExampleTest(getTestName(info)));
       addTransformer(test, transformerA, transformerB);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
@@ -331,24 +332,24 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testTransformationWithoutMatchFirstLevel(TestInfo info) throws InterruptedException {
-      SchemaDTO schema = createExampleSchema("Aca", "Aca", "Aca", false);
+      Schema schema = createExampleSchema("Aca", "Aca", "Aca", false);
       testTransformationWithoutMatch(info, schema, runWithValue(42, schema));
    }
 
    @org.junit.jupiter.api.Test
    public void testTransformationWithoutMatchSecondLevel(TestInfo info) throws InterruptedException {
-      SchemaDTO schema = createExampleSchema("B", "B", "B", false);
+      Schema schema = createExampleSchema("B", "B", "B", false);
       testTransformationWithoutMatch(info, schema, JsonNodeFactory.instance.objectNode().set("nested", runWithValue(42, schema)));
    }
 
    @org.junit.jupiter.api.Test
    public void testSchemaTransformerWithExtractorProducingNullValue(TestInfo info) throws InterruptedException {
-      SchemaDTO schema = createExampleSchema("DDDD", "DDDDInc", "DDDDRrUs", true);
-      ExtractorDTO scalarPath = new ExtractorDTO("sheep", "$.duff", false);
-      TransformerDTO scalarTransformer = createTransformer("tranProcessNullExtractorValue", schema, "sheep => ({ outcome: { sheep }})", scalarPath);
+      Schema schema = createExampleSchema("DDDD", "DDDDInc", "DDDDRrUs", true);
+      Extractor scalarPath = new Extractor("sheep", "$.duff", false);
+      Transformer scalarTransformer = createTransformer("tranProcessNullExtractorValue", schema, "sheep => ({ outcome: { sheep }})", scalarPath);
 
-      TestDTO exampleTest = createExampleTest(getTestName(info));
-      TestDTO test = createTest(exampleTest);
+      Test exampleTest = createExampleTest(getTestName(info));
+      Test test = createTest(exampleTest);
       addTransformer(test, scalarTransformer);
 
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
@@ -366,19 +367,19 @@ public class RunServiceTest extends BaseServiceTest {
       assertTrue(sheep.isEmpty());
    }
 
-   private void testTransformationWithoutMatch(TestInfo info, SchemaDTO schema, ObjectNode data) throws InterruptedException {
-      ExtractorDTO firstMatch = new ExtractorDTO("foo", "$.foo", false);
-      ExtractorDTO allMatches = new ExtractorDTO("bar", "$.bar[*].x", false);
+   private void testTransformationWithoutMatch(TestInfo info, Schema schema, ObjectNode data) throws InterruptedException {
+      Extractor firstMatch = new Extractor("foo", "$.foo", false);
+      Extractor allMatches = new Extractor("bar", "$.bar[*].x", false);
       allMatches.array = true;
-      ExtractorDTO value = new ExtractorDTO("value", "$.value", false);
-      ExtractorDTO values = new ExtractorDTO("values", "$.values[*]", false);
+      Extractor value = new Extractor("value", "$.value", false);
+      Extractor values = new Extractor("values", "$.values[*]", false);
       values.array = true;
 
-      TransformerDTO transformerNoFunc = createTransformer("noFunc", schema, null, firstMatch, allMatches);
-      TransformerDTO transformerFunc = createTransformer("func", schema, "({foo, bar}) => ({ foo, bar })", firstMatch, allMatches);
-      TransformerDTO transformerCombined = createTransformer("combined", schema, null, firstMatch, allMatches, value, values);
+      Transformer transformerNoFunc = createTransformer("noFunc", schema, null, firstMatch, allMatches);
+      Transformer transformerFunc = createTransformer("func", schema, "({foo, bar}) => ({ foo, bar })", firstMatch, allMatches);
+      Transformer transformerCombined = createTransformer("combined", schema, null, firstMatch, allMatches, value, values);
 
-      TestDTO test = createTest(createExampleTest(getTestName(info)));
+      Test test = createTest(createExampleTest(getTestName(info)));
       addTransformer(test, transformerNoFunc, transformerFunc, transformerCombined);
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
 
@@ -458,7 +459,7 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testUploadToPrivateTest() {
-      TestDTO test = createExampleTest("supersecret");
+      Test test = createExampleTest("supersecret");
       test.access = Access.PRIVATE;
       test = createTest(test);
 
@@ -469,7 +470,7 @@ public class RunServiceTest extends BaseServiceTest {
    @org.junit.jupiter.api.Test
    public void testUploadToPrivateUsingToken() {
       final String MY_SECRET_TOKEN = "mySecretToken";
-      TestDTO test = createExampleTest("supersecret");
+      Test test = createExampleTest("supersecret");
       test.access = Access.PRIVATE;
       test = createTest(test);
 
@@ -489,9 +490,9 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testRetrieveData() {
-      TestDTO test = createTest(createExampleTest("dummy"));
-      SchemaDTO schemaA = createExampleSchema("A", "A", "A", false);
-      SchemaDTO schemaB = createExampleSchema("B", "B", "B", false);
+      Test test = createTest(createExampleTest("dummy"));
+      Schema schemaA = createExampleSchema("A", "A", "A", false);
+      Schema schemaB = createExampleSchema("B", "B", "B", false);
 
       ObjectNode data1 = JsonNodeFactory.instance.objectNode()
             .put("$schema", schemaA.uri).put("value", 42);
@@ -529,14 +530,14 @@ public class RunServiceTest extends BaseServiceTest {
 
    @org.junit.jupiter.api.Test
    public void testUploadWithMetadata() throws InterruptedException {
-      TestDTO test = createTest(createExampleTest("with_meta"));
+      Test test = createTest(createExampleTest("with_meta"));
       createSchema("Foo", "urn:foo");
       createSchema("Bar", "urn:bar");
       createSchema("Q", "urn:q");
-      SchemaDTO gooSchema = createSchema("Goo", "urn:goo");
-      TransformerDTO transformer = createTransformer("ttt", gooSchema, "goo => ({ oog: goo })", new ExtractorDTO("goo", "$.goo", false));
+      Schema gooSchema = createSchema("Goo", "urn:goo");
+      Transformer transformer = createTransformer("ttt", gooSchema, "goo => ({ oog: goo })", new Extractor("goo", "$.goo", false));
       addTransformer(test, transformer);
-      SchemaDTO postSchema = createSchema("Post", "uri:Goo-post-function");
+      Schema postSchema = createSchema("Post", "uri:Goo-post-function");
 
       long now = System.currentTimeMillis();
       ObjectNode data = simpleObject("urn:foo", "foo", "xxx");
@@ -583,7 +584,7 @@ public class RunServiceTest extends BaseServiceTest {
       return data;
    }
 
-   private JsonNode getData(int runId, SchemaDTO schema) {
+   private JsonNode getData(int runId, Schema schema) {
       RequestSpecification request = jsonRequest();
       if (schema != null) {
          request = request.queryParam("schemaUri", schema.uri);

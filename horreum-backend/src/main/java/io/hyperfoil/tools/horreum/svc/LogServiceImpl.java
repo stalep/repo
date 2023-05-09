@@ -11,9 +11,9 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.api.data.ActionLogDTO;
-import io.hyperfoil.tools.horreum.api.alerting.DatasetLogDTO;
-import io.hyperfoil.tools.horreum.api.alerting.TransformationLogDTO;
+import io.hyperfoil.tools.horreum.api.data.ActionLog;
+import io.hyperfoil.tools.horreum.api.alerting.DatasetLog;
+import io.hyperfoil.tools.horreum.api.alerting.TransformationLog;
 import io.hyperfoil.tools.horreum.mapper.ActionLogMapper;
 import io.hyperfoil.tools.horreum.mapper.DatasetLogMapper;
 import io.hyperfoil.tools.horreum.mapper.TransformationLogMapper;
@@ -61,7 +61,7 @@ public class LogServiceImpl implements LogService {
    @WithRoles
    @RolesAllowed(Roles.TESTER)
    @Override
-   public List<DatasetLogDTO> getDatasetLog(String source, int testId, int level, Integer datasetId, Integer page, Integer limit) {
+   public List<DatasetLog> getDatasetLog(String source, int testId, int level, Integer datasetId, Integer page, Integer limit) {
       page = withDefault(page, 0);
       limit = withDefault(limit, 25);
       PanacheQuery<DatasetLogDAO> query;
@@ -104,7 +104,7 @@ public class LogServiceImpl implements LogService {
    @RolesAllowed(Roles.TESTER)
    @WithRoles
    @Override
-   public List<TransformationLogDTO> getTransformationLog(int testId, int level, Integer runId, Integer page, Integer limit) {
+   public List<TransformationLog> getTransformationLog(int testId, int level, Integer runId, Integer page, Integer limit) {
       page = withDefault(page, 0);
       limit = withDefault(limit, 25);
       if (runId == null || runId <= 0) {
@@ -149,7 +149,7 @@ public class LogServiceImpl implements LogService {
    @Override
    @WithRoles
    @RolesAllowed(Roles.TESTER)
-   public List<ActionLogDTO> getActionLog(int testId, int level, Integer page, Integer limit) {
+   public List<ActionLog> getActionLog(int testId, int level, Integer page, Integer limit) {
       page = withDefault(page, 0);
       limit = withDefault(limit, 25);
       List<ActionLogDAO> logs = ActionLogDAO.find("testid = ?1 AND level >= ?2", Sort.descending("timestamp"), testId, level)

@@ -19,9 +19,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.api.data.DataSetDTO;
-import io.hyperfoil.tools.horreum.api.data.ExperimentComparisonDTO;
-import io.hyperfoil.tools.horreum.api.data.ExperimentProfileDTO;
+import io.hyperfoil.tools.horreum.api.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.ExperimentComparison;
+import io.hyperfoil.tools.horreum.api.data.ExperimentProfile;
 import io.hyperfoil.tools.horreum.entity.*;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
@@ -71,7 +71,7 @@ public class ExperimentServiceImpl implements ExperimentService {
    @WithRoles
    @PermitAll
    @Override
-   public Collection<ExperimentProfileDTO> profiles(int testId) {
+   public Collection<ExperimentProfile> profiles(int testId) {
       List<ExperimentProfileDAO> profiles = ExperimentProfileDAO.list("test_id", testId);
       return profiles.stream().map(ExperimentProfileMapper::from).collect(Collectors.toList());
    }
@@ -80,7 +80,7 @@ public class ExperimentServiceImpl implements ExperimentService {
    @RolesAllowed(Roles.TESTER)
    @Transactional
    @Override
-   public int addOrUpdateProfile(int testId, ExperimentProfileDTO dto) {
+   public int addOrUpdateProfile(int testId, ExperimentProfile dto) {
       if (dto.selectorLabels == null || dto.selectorLabels.isEmpty()) {
          throw ServiceException.badRequest("Experiment profile must have selector labels defined.");
       } else if (dto.baselineLabels == null || dto.baselineLabels.isEmpty()) {
@@ -240,10 +240,10 @@ public class ExperimentServiceImpl implements ExperimentService {
          List<DatasetLogDAO> profileLogs = perProfileLogs.get(entry.getKey());
          ExperimentProfileDAO profile = ExperimentProfileDAO.findById(entry.getKey());
          Map<Integer, List<DataPointDAO>> byVar = new HashMap<>();
-         List<Integer> variableIds = profile.comparisons.stream().map(ExperimentComparison::getVariableId).collect(Collectors.toList());
+         List<Integer> variableIds = profile.comparisons.stream().map(io.hyperfoil.tools.horreum.entity.ExperimentComparison::getVariableId).collect(Collectors.toList());
          DataPointDAO.<DataPointDAO>find("dataset_id IN ?1 AND variable_id IN ?2", Sort.descending("timestamp", "dataset_id"), entry.getValue(), variableIds)
                .stream().forEach(dp -> byVar.computeIfAbsent(dp.variable.id, v -> new ArrayList<>()).add(dp));
-         Map<ExperimentComparisonDTO, ComparisonResult> results = new HashMap<>();
+         Map<ExperimentComparison, ComparisonResult> results = new HashMap<>();
          for (var comparison : profile.comparisons) {
             Hibernate.initialize(comparison.variable);
             ExperimentConditionModel model = MODELS.get(comparison.model);
@@ -266,9 +266,9 @@ public class ExperimentServiceImpl implements ExperimentService {
          }
 
          Query datasetQuery = em.createNativeQuery("SELECT id, runid as \"runId\", ordinal, testid as \"testId\" FROM dataset WHERE id IN ?1 ORDER BY start DESC");
-         SqlServiceImpl.setResultTransformer(datasetQuery, Transformers.aliasToBean(DataSetDTO.Info.class));
-         @SuppressWarnings("unchecked") List<DataSetDTO.Info> baseline =
-               (List<DataSetDTO.Info>) datasetQuery.setParameter(1, entry.getValue()).getResultList();
+         SqlServiceImpl.setResultTransformer(datasetQuery, Transformers.aliasToBean(DataSet.Info.class));
+         @SuppressWarnings("unchecked") List<DataSet.Info> baseline =
+               (List<DataSet.Info>) datasetQuery.setParameter(1, entry.getValue()).getResultList();
 
          JsonNode extraLabels = (JsonNode) em.createNativeQuery("SELECT COALESCE(jsonb_object_agg(COALESCE(label.name, ''), lv.value), '{}'::::jsonb) AS value " +
                "FROM experiment_profile ep JOIN label ON json_contains(ep.extra_labels, label.name) " +
@@ -297,7 +297,7 @@ public class ExperimentServiceImpl implements ExperimentService {
          for (JsonNode node : experiments) {
             ExperimentProfileDAO profile;
             try {
-               profile = ExperimentProfileMapper.to(Util.OBJECT_MAPPER.treeToValue(node, ExperimentProfileDTO.class));
+               profile = ExperimentProfileMapper.to(Util.OBJECT_MAPPER.treeToValue(node, ExperimentProfile.class));
             } catch (JsonProcessingException e) {
                throw ServiceException.badRequest("Cannot deserialize experiment profile id '" + node.path("id").asText() + "': " + e.getMessage());
             }

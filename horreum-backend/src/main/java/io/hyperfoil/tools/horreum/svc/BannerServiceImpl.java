@@ -12,7 +12,7 @@ import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.api.data.BannerDTO;
+import io.hyperfoil.tools.horreum.api.data.Banner;
 import io.hyperfoil.tools.horreum.mapper.BannerMapper;
 import io.hyperfoil.tools.horreum.api.services.BannerService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -42,7 +42,7 @@ public class BannerServiceImpl implements BannerService {
    @WithRoles
    @Transactional
    @Override
-   public void set(BannerDTO dto) {
+   public void set(Banner dto) {
       BannerDAO banner = BannerMapper.to(dto);
       BannerDAO previous = getBanner();
       if (previous != null) {
@@ -69,7 +69,7 @@ public class BannerServiceImpl implements BannerService {
 
    @PermitAll
    @Override
-   public BannerDTO get() {
+   public Banner get() {
      return BannerMapper.from(getBanner());
    }
 

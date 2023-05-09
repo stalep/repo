@@ -34,17 +34,17 @@ public interface TestService {
 
    @GET
    @Path("{id}")
-   TestDTO get(@PathParam("id") int id, @QueryParam("token") String token);
+   Test get(@PathParam("id") int id, @QueryParam("token") String token);
 
    @GET
    @Path("byName/{name}")
-   TestDTO getByNameOrId(@PathParam("name") String input);
+   Test getByNameOrId(@PathParam("name") String input);
 
    @POST
-   TestDTO add(@RequestBody(required = true) TestDTO test);
+   Test add(@RequestBody(required = true) Test test);
 
    @GET
-   List<TestDTO> list(@QueryParam("roles") String roles,
+   List<Test> list(@QueryParam("roles") String roles,
                    @QueryParam("limit") Integer limit,
                    @QueryParam("page") Integer page,
                    @QueryParam("sort") @DefaultValue("name") String sort,
@@ -61,11 +61,11 @@ public interface TestService {
    @POST
    @Path("{id}/addToken")
    @Produces(MediaType.TEXT_PLAIN)
-   int addToken(@PathParam("id") int testId, TestTokenDTO token);
+   int addToken(@PathParam("id") int testId, TestToken token);
 
    @GET
    @Path("{id}/tokens")
-   Collection<TestTokenDTO> tokens(@PathParam("id") int testId);
+   Collection<TestToken> tokens(@PathParam("id") int testId);
 
    @POST
    @Path("{id}/revokeToken/{tokenId}")
@@ -80,7 +80,7 @@ public interface TestService {
 
    @POST
    @Path("{testId}/view")
-   int updateView(@PathParam("testId") int testId, @RequestBody(required = true) ViewDTO view);
+   int updateView(@PathParam("testId") int testId, @RequestBody(required = true) View view);
 
    @DELETE
    @Path("{testId}/view/{viewId}")
@@ -97,7 +97,7 @@ public interface TestService {
 
    @POST
    @Path("{testId}/action")
-   ActionDTO updateAction(@PathParam("testId") int testId, @RequestBody(required = true) ActionDTO action);
+   Action updateAction(@PathParam("testId") int testId, @RequestBody(required = true) Action action);
 
    @GET
    @Path("{id}/fingerprint")

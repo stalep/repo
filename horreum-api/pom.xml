@@ -65,10 +65,10 @@
                         <configuration>
                             <scanPackages>
                                 io.hyperfoil.tools.horreum.api,
-                                io.hyperfoil.tools.horreum.entity,
-                                io.hyperfoil.tools.horreum.entity.json,
-                                io.hyperfoil.tools.horreum.entity.report,
-                                io.hyperfoil.tools.horreum.grafana
+                                io.hyperfoil.tools.horreum.api.alerting,
+                                io.hyperfoil.tools.horreum.api.data,
+                                io.hyperfoil.tools.horreum.api.grafana,
+                                io.hyperfoil.tools.horreum.api.report
                             </scanPackages>
                             <scanClasses>.*</scanClasses>
                             <operationIdStrategy>CLASS_METHOD</operationIdStrategy>

@@ -20,9 +20,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import io.hyperfoil.tools.horreum.api.ApiIgnore;
-import io.hyperfoil.tools.horreum.api.data.ValidationErrorDTO;
+import io.hyperfoil.tools.horreum.api.data.ValidationError;
 import io.hyperfoil.tools.horreum.api.data.Access;
-import io.hyperfoil.tools.horreum.api.data.RunDTO;
+import io.hyperfoil.tools.horreum.api.data.Run;
 
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -85,7 +85,7 @@ public interface RunService {
               @QueryParam("owner") String owner,
               @QueryParam("access") Access access,
               @QueryParam("token") String token,
-              @RequestBody(required = true) RunDTO run);
+              @RequestBody(required = true) Run run);
 
    @POST
    @Path("data")
@@ -202,11 +202,11 @@ public interface RunService {
       public List<SchemaService.SchemaUsage> schemas;
       @Schema(required = true, implementation = int[].class)
       public ArrayNode datasets;
-      @Schema(implementation = ValidationErrorDTO[].class)
+      @Schema(implementation = ValidationError[].class)
       public ArrayNode validationErrors;
    }
 
-   class RunExtended extends RunDTO {
+   class RunExtended extends Run {
       @NotNull
       public List<SchemaService.SchemaUsage> schemas;
       @NotNull

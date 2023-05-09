@@ -13,9 +13,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import io.hyperfoil.tools.horreum.api.data.ValidationErrorDTO;
-import io.hyperfoil.tools.horreum.api.data.DataSetDTO;
-import io.hyperfoil.tools.horreum.api.data.LabelDTO;
+import io.hyperfoil.tools.horreum.api.data.ValidationError;
+import io.hyperfoil.tools.horreum.api.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.Label;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -33,7 +33,7 @@ import io.hyperfoil.tools.horreum.api.data.Access;
 public interface DatasetService {
    @Path("{id}")
    @GET
-   DataSetDTO getDataSet(@PathParam("id") int datasetId);
+   DataSet getDataSet(@PathParam("id") int datasetId);
 
    @Path("list/{testId}")
    @GET
@@ -66,7 +66,7 @@ public interface DatasetService {
 
    @POST
    @Path("{datasetId}/previewLabel")
-   LabelPreview previewLabel(@PathParam("datasetId") int datasetId, @RequestBody(required = true) LabelDTO label);
+   LabelPreview previewLabel(@PathParam("datasetId") int datasetId, @RequestBody(required = true) Label label);
 
    @GET
    @Path("{datasetId}/summary")
@@ -95,7 +95,7 @@ public interface DatasetService {
       public ObjectNode view;
       @Schema(required = true)
       public List<SchemaService.SchemaUsage> schemas;
-      @Schema(implementation = ValidationErrorDTO[].class)
+      @Schema(implementation = ValidationError[].class)
       public ArrayNode validationErrors;
    }
 

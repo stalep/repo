@@ -1,11 +1,11 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.data.AllowedSiteDAO;
-import io.hyperfoil.tools.horreum.api.data.AllowedSiteDTO;
+import io.hyperfoil.tools.horreum.api.data.AllowedSite;
 
 public class AllowedSiteMapper {
-    public static AllowedSiteDTO from(AllowedSiteDAO site) {
-        AllowedSiteDTO dto = new AllowedSiteDTO();
+    public static AllowedSite from(AllowedSiteDAO site) {
+        AllowedSite dto = new AllowedSite();
         dto.id = site.id;
         dto.prefix = site.prefix;
 

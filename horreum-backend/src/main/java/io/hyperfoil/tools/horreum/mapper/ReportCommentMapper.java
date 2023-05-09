@@ -1,11 +1,11 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.report.ReportCommentDAO;
-import io.hyperfoil.tools.horreum.api.report.ReportCommentDTO;
+import io.hyperfoil.tools.horreum.api.report.ReportComment;
 
 public class ReportCommentMapper {
-    public static ReportCommentDTO from(ReportCommentDAO rc) {
-        ReportCommentDTO dto = new ReportCommentDTO();
+    public static ReportComment from(ReportCommentDAO rc) {
+        ReportComment dto = new ReportComment();
         dto.id = rc.id;
         dto.comment = rc.comment;
         dto.category = rc.category;
@@ -15,7 +15,7 @@ public class ReportCommentMapper {
         return dto;
     }
 
-    public static ReportCommentDAO to(ReportCommentDTO dto) {
+    public static ReportCommentDAO to(ReportComment dto) {
         ReportCommentDAO rc = new ReportCommentDAO();
         rc.id = dto.id;
         rc.comment = dto.comment;

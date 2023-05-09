@@ -9,7 +9,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.hyperfoil.tools.horreum.api.data.RunDTO;
+import io.hyperfoil.tools.horreum.api.data.Run;
 import io.hyperfoil.tools.horreum.api.services.QueryResult;
 import io.hyperfoil.tools.horreum.api.services.RunService;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -72,7 +72,7 @@ public class RunServiceExtension implements RunService {
    }
 
    @Override
-   public Response add(String testNameOrId, String owner, Access access, String token, RunDTO run) {
+   public Response add(String testNameOrId, String owner, Access access, String token, Run run) {
       return delegate.add(testNameOrId, owner, access, token, run);
    }
 

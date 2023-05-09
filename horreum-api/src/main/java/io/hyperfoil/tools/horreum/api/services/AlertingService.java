@@ -17,7 +17,7 @@ import javax.ws.rs.core.MediaType;
 
 import io.hyperfoil.tools.horreum.api.ConditionConfig;
 import io.hyperfoil.tools.horreum.api.alerting.*;
-import io.hyperfoil.tools.horreum.api.data.DataSetDTO;
+import io.hyperfoil.tools.horreum.api.data.DataSet;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
@@ -29,12 +29,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public interface AlertingService {
    @GET
    @Path("variables")
-   List<VariableDTO> variables(@QueryParam("test") Integer testId);
+   List<Variable> variables(@QueryParam("test") Integer testId);
 
    @POST
    @Path("variables")
    void updateVariables(@Parameter(required = true) @QueryParam("test") int testId,
-                        @RequestBody(required = true) List<VariableDTO> variables);
+                        @RequestBody(required = true) List<Variable> variables);
 
    @GET
    @Path("dashboard")
@@ -43,13 +43,13 @@ public interface AlertingService {
 
    @GET
    @Path("changes")
-   List<ChangeDTO> changes(@Parameter(required = true) @QueryParam("var") int varId,
-                           @QueryParam("fingerprint") String fingerprint);
+   List<Change> changes(@Parameter(required = true) @QueryParam("var") int varId,
+                        @QueryParam("fingerprint") String fingerprint);
 
    @POST
    @Path("change/{id}")
    void updateChange(@Parameter(required = true) @PathParam("id") int id,
-                     @RequestBody(required = true) ChangeDTO change);
+                     @RequestBody(required = true) Change change);
 
    @DELETE
    @Path("change/{id}")
@@ -80,7 +80,7 @@ public interface AlertingService {
    // Test mode only
    @GET
    @Path("/expectations")
-   List<RunExpectationDTO> expectations();
+   List<RunExpectation> expectations();
 
    @POST
    @Path("/changeDetection")
@@ -92,17 +92,17 @@ public interface AlertingService {
 
    @GET
    @Path("/defaultChangeDetectionConfigs")
-   List<ChangeDetectionDTO> defaultChangeDetectionConfigs();
+   List<ChangeDetection> defaultChangeDetectionConfigs();
 
    @GET
    @Path("/missingdatarule")
-   List<MissingDataRuleDTO> missingDataRules(@Parameter(required = true) @QueryParam("testId") int testId);
+   List<MissingDataRule> missingDataRules(@Parameter(required = true) @QueryParam("testId") int testId);
 
    @POST
    @Path("/missingdatarule")
    int updateMissingDataRule(
          @Parameter(required = true) @QueryParam("testId") int testId,
-         @RequestBody(required = true) MissingDataRuleDTO rule);
+         @RequestBody(required = true) MissingDataRule rule);
 
    @DELETE
    @Path("/missingdatarule/{id}")
@@ -127,9 +127,9 @@ public interface AlertingService {
       @NotNull
       public String name;
       @NotNull
-      public List<VariableDTO> variables;
+      public List<Variable> variables;
 
-      public PanelInfo(String name, List<VariableDTO> variables) {
+      public PanelInfo(String name, List<Variable> variables) {
          this.name = name;
          this.variables = variables;
       }
@@ -166,7 +166,7 @@ public interface AlertingService {
       public Integer totalDatasets;
       public Integer errors;
       @NotNull
-      public Collection<DataSetDTO.Info> datasetsWithoutValue;
+      public Collection<DataSet.Info> datasetsWithoutValue;
    }
 
 

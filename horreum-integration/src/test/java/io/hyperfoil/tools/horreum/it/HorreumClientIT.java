@@ -11,7 +11,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.callback.*;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 import io.hyperfoil.tools.HorreumClient;
 
@@ -30,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestProfile(InContainerProfile.class)
 public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback, QuarkusTestBeforeClassCallback, QuarkusTestBeforeEachCallback, QuarkusTestAfterEachCallback, QuarkusTestAfterAllCallback {
 
-    @Test
+    @org.junit.jupiter.api.Test
     public void testAddRunFromData() throws JsonProcessingException {
         JsonNode payload = new ObjectMapper().readTree(resourceToString("data/config-quickstart.jvm.json"));
 
@@ -41,7 +40,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
         }
     }
 
-    @Test
+    @org.junit.jupiter.api.Test
     public void testAddRunWithMetadataData() throws JsonProcessingException {
         JsonNode payload = new ObjectMapper().readTree(resourceToString("data/config-quickstart.jvm.json"));
         JsonNode metadata = JsonNodeFactory.instance.objectNode().put("$schema", "urn:foobar").put("foo", "bar");
@@ -53,9 +52,9 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
         }
     }
 
-    @Test
+    @org.junit.jupiter.api.Test
     public void testAddRun() throws JsonProcessingException {
-        RunDTO run = new RunDTO();
+        Run run = new Run();
         run.start = Instant.now();
         run.stop = Instant.now();
         run.testid = -1; // should be ignored
@@ -65,9 +64,9 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
     }
 
     // Javascript execution gets often broken with new Quarkus releases, this should catch it
-    @Test
+    @org.junit.jupiter.api.Test
     public void testJavascriptExecution() throws InterruptedException {
-        SchemaDTO schema = new SchemaDTO();
+        Schema schema = new Schema();
         schema.uri = "urn:dummy:schema";
         schema.name = "Dummy";
         schema.owner = dummyTest.owner;
@@ -94,11 +93,11 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
         }
         Assertions.assertNotEquals(-1, datasetId);
 
-        LabelDTO label = new LabelDTO();
+        Label label = new Label();
         label.name = "foo";
         label.schemaId= schema.id;
         label.function = "value => value";
-        label.extractors = Collections.singletonList(new ExtractorDTO("value", "$.value", false));
+        label.extractors = Collections.singletonList(new Extractor("value", "$.value", false));
         DatasetService.LabelPreview preview = horreumClient.datasetService.previewLabel(datasetId, label);
         Assertions.assertEquals("foobar", preview.value.textValue());
     }
@@ -116,7 +115,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
 
     public static HorreumClient horreumClient;
 
-    public static TestDTO dummyTest;
+    public static Test dummyTest;
 
 
     @Override
@@ -129,7 +128,7 @@ public class HorreumClientIT implements  QuarkusTestBeforeTestExecutionCallback,
             dummyTest = null;
         }
         Assertions.assertNull(dummyTest);
-        TestDTO test = new TestDTO();
+        Test test = new Test();
         test.name = "test" ;
         test.owner = "dev-team";
         test.description = "This is a dummy test";

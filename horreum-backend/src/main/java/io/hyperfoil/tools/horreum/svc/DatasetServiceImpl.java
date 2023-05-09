@@ -16,8 +16,8 @@ import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.api.data.DataSetDTO;
-import io.hyperfoil.tools.horreum.api.data.LabelDTO;
+import io.hyperfoil.tools.horreum.api.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.Label;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
 import org.hibernate.Hibernate;
@@ -314,7 +314,7 @@ public class DatasetServiceImpl implements DatasetService {
 
    @Override
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
-   public LabelPreview previewLabel(int datasetId, LabelDTO label) {
+   public LabelPreview previewLabel(int datasetId, Label label) {
       // This is executed with elevated permissions, but with the same as a normal label calculation would use
       // Therefore we need to explicitly check dataset ownership
       DataSetDAO dataset = DataSetDAO.findById(datasetId);
@@ -372,7 +372,7 @@ public class DatasetServiceImpl implements DatasetService {
    @WithToken
    @WithRoles
    @Override
-   public DataSetDTO getDataSet(int datasetId) {
+   public DataSet getDataSet(int datasetId) {
       DataSetDAO dataset = DataSetDAO.findById(datasetId);
       if (dataset != null) {
          Hibernate.initialize(dataset.data);

@@ -1,16 +1,15 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.entity.ExperimentComparison;
-import io.hyperfoil.tools.horreum.api.data.ExperimentComparisonDTO;
+import io.hyperfoil.tools.horreum.api.data.ExperimentComparison;
 import io.hyperfoil.tools.horreum.entity.ExperimentProfileDAO;
-import io.hyperfoil.tools.horreum.api.data.ExperimentProfileDTO;
+import io.hyperfoil.tools.horreum.api.data.ExperimentProfile;
 
 import java.util.stream.Collectors;
 
 public class ExperimentProfileMapper {
 
-    public static ExperimentProfileDTO from(ExperimentProfileDAO ep) {
-        ExperimentProfileDTO dto = new ExperimentProfileDTO();
+    public static ExperimentProfile from(ExperimentProfileDAO ep) {
+        ExperimentProfile dto = new ExperimentProfile();
         dto.id = ep.id;
         dto.name = ep.name;
         dto.testId = ep.test.id;
@@ -25,8 +24,8 @@ public class ExperimentProfileMapper {
         return dto;
     }
 
-    public static ExperimentComparisonDTO fromExperimentComparison(ExperimentComparison ec) {
-        ExperimentComparisonDTO dto = new ExperimentComparisonDTO();
+    public static ExperimentComparison fromExperimentComparison(io.hyperfoil.tools.horreum.entity.ExperimentComparison ec) {
+        ExperimentComparison dto = new ExperimentComparison();
         dto.variableId = ec.getVariableId();
         dto.variableName = ec.variable.name;
         dto.config = ec.config;
@@ -35,7 +34,7 @@ public class ExperimentProfileMapper {
         return dto;
     }
 
-    public static ExperimentProfileDAO to(ExperimentProfileDTO dto) {
+    public static ExperimentProfileDAO to(ExperimentProfile dto) {
         ExperimentProfileDAO ep = new ExperimentProfileDAO();
         ep.id = dto.id;
         ep.name = dto.name;
@@ -50,8 +49,8 @@ public class ExperimentProfileMapper {
         return ep;
     }
 
-    public static ExperimentComparison toExperimentComparison(ExperimentComparisonDTO dto) {
-        ExperimentComparison ec = new ExperimentComparison();
+    public static io.hyperfoil.tools.horreum.entity.ExperimentComparison toExperimentComparison(ExperimentComparison dto) {
+        io.hyperfoil.tools.horreum.entity.ExperimentComparison ec = new io.hyperfoil.tools.horreum.entity.ExperimentComparison();
         ec.config = dto.config;
         ec.model = dto.model;
         ec.setVariableId(dto.variableId);

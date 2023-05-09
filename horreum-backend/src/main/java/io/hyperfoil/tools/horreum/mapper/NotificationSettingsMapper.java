@@ -1,11 +1,11 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.NotificationSettingsDAO;
-import io.hyperfoil.tools.horreum.api.alerting.NotificationSettingsDTO;
+import io.hyperfoil.tools.horreum.api.alerting.NotificationSettings;
 
 public class NotificationSettingsMapper {
-    public static NotificationSettingsDTO from(NotificationSettingsDAO ns) {
-        NotificationSettingsDTO dto = new NotificationSettingsDTO();
+    public static NotificationSettings from(NotificationSettingsDAO ns) {
+        NotificationSettings dto = new NotificationSettings();
         dto.id = ns.id;
         dto.name = ns.name;
         dto.isTeam = ns.isTeam;

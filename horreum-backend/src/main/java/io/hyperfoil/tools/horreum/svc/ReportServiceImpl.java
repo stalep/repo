@@ -23,9 +23,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.api.report.ReportCommentDTO;
-import io.hyperfoil.tools.horreum.api.report.TableReportConfigDTO;
-import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
+import io.hyperfoil.tools.horreum.api.report.ReportComment;
+import io.hyperfoil.tools.horreum.api.report.TableReportConfig;
+import io.hyperfoil.tools.horreum.api.report.TableReport;
 import io.hyperfoil.tools.horreum.entity.report.*;
 import io.hyperfoil.tools.horreum.mapper.ReportCommentMapper;
 import io.hyperfoil.tools.horreum.mapper.TableReportMapper;
@@ -149,8 +149,8 @@ public class ReportServiceImpl implements ReportService {
    @PermitAll
    @WithRoles
    @Override
-   public TableReportConfigDTO getTableReportConfig(int id) {
-      TableReportConfig config = TableReportConfig.findById(id);
+   public TableReportConfig getTableReportConfig(int id) {
+      io.hyperfoil.tools.horreum.entity.report.TableReportConfig config = io.hyperfoil.tools.horreum.entity.report.TableReportConfig.findById(id);
       if (config == null) {
          throw ServiceException.notFound("Table report config does not exist or insufficient permissions.");
       }
@@ -161,7 +161,7 @@ public class ReportServiceImpl implements ReportService {
    @WithRoles
    @Override
    @Transactional
-   public TableReportDTO updateTableReportConfig(TableReportConfigDTO dto, Integer reportId) {
+   public TableReport updateTableReportConfig(TableReportConfig dto, Integer reportId) {
       if (dto.id != null && dto.id < 0) {
          dto.id = null;
       }
@@ -176,13 +176,13 @@ public class ReportServiceImpl implements ReportService {
          }
       }
       validateTableConfig(dto);
-      TableReportConfig config = TableReportMapper.toTableReportConfig(dto);
+      io.hyperfoil.tools.horreum.entity.report.TableReportConfig config = TableReportMapper.toTableReportConfig(dto);
       config.ensureLinked();
       TableReportDAO report = createTableReport(config, reportId);
       if (config.id == null) {
          config.persist();
       } else {
-         TableReportConfig original = TableReportConfig.findById(config.id);
+         io.hyperfoil.tools.horreum.entity.report.TableReportConfig original = io.hyperfoil.tools.horreum.entity.report.TableReportConfig.findById(config.id);
          original.components.clear();
          original.components.addAll(config.components);
          config.components = original.components;
@@ -197,7 +197,7 @@ public class ReportServiceImpl implements ReportService {
       return TableReportMapper.from(report);
    }
 
-   private void validateTableConfig(TableReportConfigDTO config) {
+   private void validateTableConfig(TableReportConfig config) {
       if (config == null) {
          throw ServiceException.badRequest("No config");
       }
@@ -229,7 +229,7 @@ public class ReportServiceImpl implements ReportService {
    @PermitAll
    @WithRoles
    @Override
-   public TableReportDTO getTableReport(int id) {
+   public TableReport getTableReport(int id) {
       TableReportDAO report = TableReportDAO.findById(id);
       Hibernate.initialize(report.config);
       return TableReportMapper.from(report);
@@ -252,7 +252,7 @@ public class ReportServiceImpl implements ReportService {
    @WithRoles
    @Override
    @Transactional
-   public ReportCommentDTO updateComment(int reportId, ReportCommentDTO dto) {
+   public ReportComment updateComment(int reportId, ReportComment dto) {
       ReportCommentDAO comment = ReportCommentMapper.to(dto);
       if (comment.id == null || comment.id < 0) {
          comment.id = null;
@@ -282,9 +282,9 @@ public class ReportServiceImpl implements ReportService {
    @Transactional
    @Override
    public void importTableReportConfig(JsonNode json) {
-      TableReportConfigDTO config;
+      TableReportConfig config;
       try {
-         config = Util.OBJECT_MAPPER.treeToValue(json, TableReportConfigDTO.class);
+         config = Util.OBJECT_MAPPER.treeToValue(json, TableReportConfig.class);
       } catch (JsonProcessingException e) {
          throw ServiceException.badRequest("Cannot deserialize table report configuration: " + e.getMessage());
       }
@@ -296,15 +296,15 @@ public class ReportServiceImpl implements ReportService {
    @PermitAll
    @WithRoles
    @Override
-   public TableReportDTO previewTableReport(TableReportConfigDTO dto, Integer reportId) {
+   public TableReport previewTableReport(TableReportConfig dto, Integer reportId) {
       validateTableConfig(dto);
-      TableReportConfig config = TableReportMapper.toTableReportConfig(dto);
+      io.hyperfoil.tools.horreum.entity.report.TableReportConfig config = TableReportMapper.toTableReportConfig(dto);
       TableReportDAO report = createTableReport(config, reportId);
       em.detach(report);
       return TableReportMapper.from(report);
    }
 
-   private TableReportDAO createTableReport(TableReportConfig config, Integer reportId) {
+   private TableReportDAO createTableReport(io.hyperfoil.tools.horreum.entity.report.TableReportConfig config, Integer reportId) {
       Integer testId = config.test.id;
       TestDAO test = TestDAO.findById(testId);
       if (test == null) {
@@ -436,7 +436,7 @@ public class ReportServiceImpl implements ReportService {
       return node == null || node.isNull() || node.isEmpty();
    }
 
-   private Map<Integer, TableReportDAO.Data> getData(TableReportConfig config, TableReportDAO report,
+   private Map<Integer, TableReportDAO.Data> getData(io.hyperfoil.tools.horreum.entity.report.TableReportConfig config, TableReportDAO report,
                                                      List<Object[]> categories, List<Object[]> series, List<Object[]> scales) {
       assert !categories.isEmpty();
       assert !series.isEmpty();
@@ -624,7 +624,7 @@ public class ReportServiceImpl implements ReportService {
       }
    }
 
-   private List<Integer> filterDatasetIds(TableReportConfig config, TableReportDAO report) {
+   private List<Integer> filterDatasetIds(io.hyperfoil.tools.horreum.entity.report.TableReportConfig config, TableReportDAO report) {
       List<Object[]> list = selectByTest(config.test.id, config.filterLabels);
       if (list.isEmpty()) {
          log(report, PersistentLog.WARN, "There are no matching datasets for test %s (%d)", config.test.name, config.test.id);
@@ -701,7 +701,7 @@ public class ReportServiceImpl implements ReportService {
       return jsCode.toString();
    }
 
-   private void executeInContext(TableReportConfig config, Consumer<Context> consumer) {
+   private void executeInContext(io.hyperfoil.tools.horreum.entity.report.TableReportConfig config, Consumer<Context> consumer) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       try (Context context = Context.newBuilder("js").out(out).err(out).build()) {
          context.enter();

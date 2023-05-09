@@ -20,7 +20,7 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-import io.hyperfoil.tools.horreum.api.alerting.NotificationSettingsDTO;
+import io.hyperfoil.tools.horreum.api.alerting.NotificationSettings;
 import io.hyperfoil.tools.horreum.mapper.NotificationSettingsMapper;
 import org.jboss.logging.Logger;
 
@@ -135,7 +135,7 @@ public class NotificationServiceImpl implements NotificationService {
    @WithRoles(addUsername = true)
    @RolesAllowed({ Roles.VIEWER, Roles.TESTER, Roles.ADMIN})
    @Override
-   public List<NotificationSettingsDTO> settings(String name, boolean team) {
+   public List<NotificationSettings> settings(String name, boolean team) {
       List<NotificationSettingsDAO> notifications = NotificationSettingsDAO.list("name = ?1 AND isTeam = ?2", name, team);
       return notifications.stream().map(NotificationSettingsMapper::from).collect(Collectors.toList());
    }
@@ -144,9 +144,9 @@ public class NotificationServiceImpl implements NotificationService {
    @RolesAllowed({ Roles.VIEWER, Roles.TESTER, Roles.ADMIN})
    @Transactional
    @Override
-   public void updateSettings(String name, boolean team, NotificationSettingsDTO[] settings) {
+   public void updateSettings(String name, boolean team, NotificationSettings[] settings) {
       NotificationSettingsDAO.delete("name = ?1 AND isTeam = ?2", name, team);
-      for (NotificationSettingsDTO s : settings) {
+      for (NotificationSettings s : settings) {
          if (!plugins.containsKey(s.method)) {
             try {
                tm.setRollbackOnly();

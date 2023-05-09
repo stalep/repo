@@ -15,9 +15,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import io.hyperfoil.tools.horreum.api.SortDirection;
-import io.hyperfoil.tools.horreum.api.report.ReportCommentDTO;
-import io.hyperfoil.tools.horreum.api.report.TableReportConfigDTO;
-import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
+import io.hyperfoil.tools.horreum.api.report.ReportComment;
+import io.hyperfoil.tools.horreum.api.report.TableReportConfig;
+import io.hyperfoil.tools.horreum.api.report.TableReport;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,19 +40,19 @@ public interface ReportService {
 
    @GET
    @Path("table/config/{id}")
-   TableReportConfigDTO getTableReportConfig(@PathParam("id") int id);
+   TableReportConfig getTableReportConfig(@PathParam("id") int id);
 
    @POST
    @Path("table/preview")
-   TableReportDTO previewTableReport(TableReportConfigDTO config, @QueryParam("edit") Integer updatedReportId);
+   TableReport previewTableReport(TableReportConfig config, @QueryParam("edit") Integer updatedReportId);
 
    @POST
    @Path("table/config")
-   TableReportDTO updateTableReportConfig(TableReportConfigDTO config, @QueryParam("edit") Integer updatedReportId);
+   TableReport updateTableReportConfig(TableReportConfig config, @QueryParam("edit") Integer updatedReportId);
 
    @GET
    @Path("table/{id}")
-   TableReportDTO getTableReport(@PathParam("id") int id);
+   TableReport getTableReport(@PathParam("id") int id);
 
    @DELETE
    @Path("table/{id}")
@@ -60,7 +60,7 @@ public interface ReportService {
 
    @POST
    @Path("comment/{reportId}")
-   ReportCommentDTO updateComment(@PathParam("reportId") int reportId, ReportCommentDTO comment);
+   ReportComment updateComment(@PathParam("reportId") int reportId, ReportComment comment);
 
    @GET
    @Path("table/config/{id}/export")

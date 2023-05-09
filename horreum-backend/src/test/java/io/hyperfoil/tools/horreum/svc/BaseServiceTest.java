@@ -32,10 +32,12 @@ import javax.transaction.TransactionManager;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
-import io.hyperfoil.tools.horreum.api.alerting.MissingDataRuleDTO;
+import io.hyperfoil.tools.horreum.api.alerting.MissingDataRule;
 import io.hyperfoil.tools.horreum.api.data.*;
+import io.hyperfoil.tools.horreum.api.data.Extractor;
 import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.entity.data.*;
+import io.hyperfoil.tools.horreum.entity.data.ViewComponent;
 import org.hibernate.query.NativeQuery;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -111,7 +113,7 @@ public class BaseServiceTest {
          return ADMIN_TOKEN;
       }
    }
-   protected static ObjectNode runWithValue(double value, SchemaDTO schema) {
+   protected static ObjectNode runWithValue(double value, Schema schema) {
       ObjectNode runJson = JsonNodeFactory.instance.objectNode();
       runJson.put("$schema", schema.uri);
       runJson.put("value", value);
@@ -123,9 +125,9 @@ public class BaseServiceTest {
       return runJson;
    }
 
-   protected static ObjectNode runWithValue(double value, SchemaDTO... schemas) {
+   protected static ObjectNode runWithValue(double value, Schema... schemas) {
       ObjectNode root = null;
-      for (SchemaDTO s : schemas) {
+      for (Schema s : schemas) {
          ObjectNode n = runWithValue(value, s);
          if (root == null ) {
             root = n;
@@ -186,15 +188,15 @@ public class BaseServiceTest {
       TestUtil.eventually(() -> TestUtil.isMessageBusEmpty(tm, em));
    }
 
-   public static TestDTO createExampleTest(String testName) {
-      TestDTO test = new TestDTO();
+   public static Test createExampleTest(String testName) {
+      Test test = new Test();
       test.name = testName;
       test.description = "Bar";
       test.owner = TESTER_ROLES[0];
-      ViewDTO defaultView = new ViewDTO();
+      View defaultView = new View();
       defaultView.name = "Default";
       defaultView.components = new ArrayList<>();
-      defaultView.components.add(new ViewComponentDTO("Some column", null, "foo"));
+      defaultView.components.add(new io.hyperfoil.tools.horreum.api.data.ViewComponent("Some column", null, "foo"));
       test.views = Collections.singleton(defaultView);
       test.transformers = new ArrayList<>();
       return test;
@@ -255,16 +257,16 @@ public class BaseServiceTest {
       return runId;
    }
 
-   protected TestDTO createTest(TestDTO test) {
+   protected Test createTest(Test test) {
       return jsonRequest()
             .body(test)
             .post("/api/test")
             .then()
             .statusCode(200)
-            .extract().body().as(TestDTO.class);
+            .extract().body().as(Test.class);
    }
 
-   protected void deleteTest(TestDTO test) {
+   protected void deleteTest(Test test) {
       RestAssured.given().auth().oauth2(getTesterToken())
             .delete("/api/test/" + test.id)
             .then()
@@ -285,15 +287,15 @@ public class BaseServiceTest {
       return info.getTestClass().map(Class::getName).orElse("<unknown>") + "." + info.getDisplayName();
    }
 
-   protected SchemaDTO createExampleSchema(TestInfo info) {
+   protected Schema createExampleSchema(TestInfo info) {
       String name = info.getTestClass().map(Class::getName).orElse("<unknown>") + "." + info.getDisplayName();
-      SchemaDTO schema = createSchema(name, uriForTest(info, "1.0"));
-      addLabel(schema, "value", null, new ExtractorDTO("value", "$.value", false));
+      Schema schema = createSchema(name, uriForTest(info, "1.0"));
+      addLabel(schema, "value", null, new Extractor("value", "$.value", false));
       return schema;
    }
 
-   protected SchemaDTO createExampleSchema(String name, String className, String displayName, boolean label) {
-      SchemaDTO schema = new SchemaDTO();
+   protected Schema createExampleSchema(String name, String className, String displayName, boolean label) {
+      Schema schema = new Schema();
       schema.owner = TESTER_ROLES[0];
       schema.access = Access.PUBLIC;
       schema.name = name + "." + displayName;
@@ -303,18 +305,18 @@ public class BaseServiceTest {
       schema.id = id;
 
       if (label) {
-         addLabel(schema, "value", null, new ExtractorDTO("value", "$.value", false));
+         addLabel(schema, "value", null, new Extractor("value", "$.value", false));
       }
       assertNotNull(schema.id);
       return schema;
    }
 
-   protected SchemaDTO createSchema(String name, String uri) {
+   protected Schema createSchema(String name, String uri) {
       return createSchema(name, uri, null);
    }
 
-   protected SchemaDTO createSchema(String name, String uri, JsonNode jsonSchema) {
-      SchemaDTO schema = new SchemaDTO();
+   protected Schema createSchema(String name, String uri, JsonNode jsonSchema) {
+      Schema schema = new Schema();
       schema.owner = TESTER_ROLES[0];
       schema.name = name;
       schema.uri = uri;
@@ -322,14 +324,14 @@ public class BaseServiceTest {
       return addOrUpdateSchema(schema);
    }
 
-   protected SchemaDTO addOrUpdateSchema(SchemaDTO schema) {
+   protected Schema addOrUpdateSchema(Schema schema) {
       Response response = jsonRequest().body(schema).post("/api/schema");
       response.then().statusCode(200);
       schema.id = Integer.parseInt(response.body().asString());
       return schema;
    }
 
-   protected void deleteSchema(SchemaDTO schema) {
+   protected void deleteSchema(Schema schema) {
       jsonRequest().delete("/api/schema/" + schema.id).then().statusCode(204);
    }
 
@@ -337,16 +339,16 @@ public class BaseServiceTest {
       return "urn:" + info.getTestClass().map(Class::getName).orElse("<unknown>") + ":" + info.getDisplayName() + ":" + suffix;
    }
 
-   protected int addLabel(SchemaDTO schema, String name, String function, ExtractorDTO... extractors) {
+   protected int addLabel(Schema schema, String name, String function, Extractor... extractors) {
       return postLabel(schema, name, function, null, extractors);
    }
 
-   protected int updateLabel(SchemaDTO schema, int labelId, String name, String function, ExtractorDTO... extractors) {
+   protected int updateLabel(Schema schema, int labelId, String name, String function, Extractor... extractors) {
       return postLabel(schema, name, function, l -> l.id = labelId, extractors);
    }
 
-   protected int postLabel(SchemaDTO schema, String name, String function, Consumer<LabelDTO> mutate, ExtractorDTO... extractors) {
-      LabelDTO l = new LabelDTO();
+   protected int postLabel(Schema schema, String name, String function, Consumer<Label> mutate, Extractor... extractors) {
+      Label l = new Label();
       l.name = name;
       l.function = function;
       l.schemaId = schema.id;
@@ -361,15 +363,15 @@ public class BaseServiceTest {
       return Integer.parseInt(response.body().asString());
    }
 
-   protected void deleteLabel(SchemaDTO schema, int labelId) {
+   protected void deleteLabel(Schema schema, int labelId) {
       jsonRequest().delete("/api/schema/" + schema.id + "/labels/" + labelId).then().statusCode(204);
    }
 
-   protected void setTestVariables(TestDTO test, String name, String label, ChangeDetectionDAO... rds) {
+   protected void setTestVariables(Test test, String name, String label, ChangeDetectionDAO... rds) {
       setTestVariables(test, name, Collections.singletonList(label), rds);
    }
 
-   protected void setTestVariables(TestDTO test, String name, List<String> labels, ChangeDetectionDAO... rds) {
+   protected void setTestVariables(Test test, String name, List<String> labels, ChangeDetectionDAO... rds) {
       ArrayNode variables = JsonNodeFactory.instance.arrayNode();
       ObjectNode variable = JsonNodeFactory.instance.objectNode();
       variable.put("testid", test.id);
@@ -425,7 +427,7 @@ public class BaseServiceTest {
       return trashedQueue;
    }
 
-   protected <T> T withExampleDataset(TestDTO test, JsonNode data, Function<DataSetDAO, T> testLogic) {
+   protected <T> T withExampleDataset(Test test, JsonNode data, Function<DataSetDAO, T> testLogic) {
       BlockingQueue<DataSetDAO.EventNew> dataSetQueue = eventConsumerQueue(DataSetDAO.EventNew.class, DataSetDAO.EVENT_NEW, e -> e.dataset.testid.equals(test.id));
       try {
          RunDAO run = new RunDAO();
@@ -476,7 +478,7 @@ public class BaseServiceTest {
       }
    }
 
-   protected void addToken(TestDTO test, int permissions, String value) {
+   protected void addToken(Test test, int permissions, String value) {
       ObjectNode token = JsonNodeFactory.instance.objectNode();
       token.put("value", value);
       token.put("permissions", permissions);
@@ -490,20 +492,20 @@ public class BaseServiceTest {
       return RestAssured.given().auth().oauth2(getTesterToken());
    }
 
-   protected void addTransformer(TestDTO test, TransformerDTO... transformers){
+   protected void addTransformer(Test test, Transformer... transformers){
       List<Integer> ids = new ArrayList<>();
       assertNotNull(test.id);
-      for (TransformerDTO t : transformers) {
+      for (Transformer t : transformers) {
          ids.add(t.id);
       }
       jsonRequest().body(ids).post("/api/test/" + test.id + "/transformers").then().assertThat().statusCode(204);
    }
 
-   protected TransformerDTO createTransformer(String name, SchemaDTO schema, String function, ExtractorDTO... paths) {
-      TransformerDTO transformer = new TransformerDTO();
+   protected Transformer createTransformer(String name, Schema schema, String function, Extractor... paths) {
+      Transformer transformer = new Transformer();
       transformer.name = name;
       transformer.extractors = new ArrayList<>();
-      for (ExtractorDTO path : paths) {
+      for (Extractor path : paths) {
          if (path != null) {
             transformer.extractors.add(path);
          }
@@ -521,7 +523,7 @@ public class BaseServiceTest {
       return transformer;
    }
 
-   protected String postFunctionSchemaUri(SchemaDTO s) {
+   protected String postFunctionSchemaUri(Schema s) {
       return "uri:" + s.name + "-post-function";
    }
 
@@ -550,7 +552,7 @@ public class BaseServiceTest {
             .body(prefix).post("/api/action/allowedSites").then().statusCode(200);
    }
 
-   protected Response addTestHttpAction(TestDTO test, String event, String url) {
+   protected Response addTestHttpAction(Test test, String event, String url) {
       ActionDAO action = new ActionDAO();
       action.event = event;
       action.type = HttpAction.TYPE_HTTP;
@@ -559,7 +561,7 @@ public class BaseServiceTest {
       return jsonRequest().body(action).post("/api/test/" + test.id + "/action");
    }
 
-   protected Response addTestGithubIssueCommentAction(TestDTO test, String event, String formatter, String owner, String repo, String issue, String secretToken) {
+   protected Response addTestGithubIssueCommentAction(Test test, String event, String formatter, String owner, String repo, String issue, String secretToken) {
       ActionDAO action = new ActionDAO();
       action.event = event;
       action.type = GitHubIssueCommentAction.TYPE_GITHUB_ISSUE_COMMENT;
@@ -583,11 +585,11 @@ public class BaseServiceTest {
             .header(HttpHeaders.CONTENT_TYPE, "application/json").body(action).post("/api/action");
    }
 
-   protected ChangeDetectionDAO addChangeDetectionVariable(TestDTO test) {
+   protected ChangeDetectionDAO addChangeDetectionVariable(Test test) {
       return addChangeDetectionVariable(test, 0.1, 2);
    }
 
-   protected ChangeDetectionDAO addChangeDetectionVariable(TestDTO test, double threshold, int window) {
+   protected ChangeDetectionDAO addChangeDetectionVariable(Test test, double threshold, int window) {
       ChangeDetectionDAO cd = new ChangeDetectionDAO();
       cd.model = RelativeDifferenceChangeDetectionModel.NAME;
       cd.config = JsonNodeFactory.instance.objectNode().put("threshold", threshold).put("minPrevious", window).put("window", window).put("filter", "mean");
@@ -595,8 +597,8 @@ public class BaseServiceTest {
       return cd;
    }
 
-   protected int addMissingDataRule(TestDTO test, String ruleName, ArrayNode labels, String condition, int maxStaleness) {
-      MissingDataRuleDTO rule = new MissingDataRuleDTO();
+   protected int addMissingDataRule(Test test, String ruleName, ArrayNode labels, String condition, int maxStaleness) {
+      MissingDataRule rule = new MissingDataRule();
       rule.testId = test.id;
       rule.name = ruleName;
       rule.condition = condition;
@@ -606,15 +608,15 @@ public class BaseServiceTest {
       return Integer.parseInt(ruleIdString);
    }
 
-   protected void addExperimentProfile(TestDTO test, String name, VariableDAO... variables) {
-      ExperimentProfileDTO profile = new ExperimentProfileDTO();
+   protected void addExperimentProfile(Test test, String name, VariableDAO... variables) {
+      ExperimentProfile profile = new ExperimentProfile();
       profile.name = name;
       profile.testId = test.id;
       profile.selectorLabels = JsonNodeFactory.instance.arrayNode().add("isSnapshot");
       profile.baselineLabels = JsonNodeFactory.instance.arrayNode().add("isSnapshot");
       profile.baselineFilter = "snapshot => !snapshot";
       profile.comparisons = Stream.of(variables).map(v -> {
-         ExperimentComparisonDTO comp = new ExperimentComparisonDTO();
+         ExperimentComparison comp = new ExperimentComparison();
          comp.variableName = v.name;
          comp.variableId = v.id;
          comp.model = RelativeDifferenceExperimentModel.NAME;

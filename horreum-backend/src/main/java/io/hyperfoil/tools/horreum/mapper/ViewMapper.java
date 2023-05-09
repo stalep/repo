@@ -1,15 +1,14 @@
 package io.hyperfoil.tools.horreum.mapper;
 
-import io.hyperfoil.tools.horreum.api.data.ViewComponentDTO;
-import io.hyperfoil.tools.horreum.api.data.ViewDTO;
+import io.hyperfoil.tools.horreum.api.data.View;
 import io.hyperfoil.tools.horreum.entity.data.*;
 
 import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class ViewMapper {
-    public static ViewDTO from(ViewDAO v) {
-        ViewDTO dto = new ViewDTO();
+    public static View from(ViewDAO v) {
+        View dto = new View();
         dto.id = v.id;
         dto.name = v.name;
         dto.testId = v.test.id;
@@ -19,8 +18,8 @@ public class ViewMapper {
         return dto;
     }
 
-    public static ViewComponentDTO fromViewComponent(ViewComponent vc) {
-        ViewComponentDTO dto = new ViewComponentDTO();
+    public static io.hyperfoil.tools.horreum.api.data.ViewComponent fromViewComponent(ViewComponent vc) {
+        io.hyperfoil.tools.horreum.api.data.ViewComponent dto = new io.hyperfoil.tools.horreum.api.data.ViewComponent();
         dto.id = vc.id;
         dto.headerName = vc.headerName;
         dto.headerOrder = vc.headerOrder;
@@ -30,7 +29,7 @@ public class ViewMapper {
         return dto;
     }
 
-    public static ViewDAO to(ViewDTO dto) {
+    public static ViewDAO to(View dto) {
         ViewDAO v = new ViewDAO();
         v.id = dto.id;
         v.name = dto.name;
@@ -44,7 +43,7 @@ public class ViewMapper {
         return v;
     }
 
-    private static ViewComponent toViewComponent(ViewComponentDTO dto, ViewDAO view) {
+    private static ViewComponent toViewComponent(io.hyperfoil.tools.horreum.api.data.ViewComponent dto, ViewDAO view) {
         ViewComponent vc = new ViewComponent();
         vc.id = dto.id;
         vc.headerName = dto.headerName;

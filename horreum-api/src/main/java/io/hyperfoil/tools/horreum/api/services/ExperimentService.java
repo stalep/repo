@@ -16,10 +16,10 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import io.hyperfoil.tools.horreum.api.ConditionConfig;
-import io.hyperfoil.tools.horreum.api.data.ExperimentComparisonDTO;
-import io.hyperfoil.tools.horreum.api.data.ExperimentProfileDTO;
-import io.hyperfoil.tools.horreum.api.alerting.DatasetLogDTO;
-import io.hyperfoil.tools.horreum.api.data.DataSetDTO;
+import io.hyperfoil.tools.horreum.api.data.ExperimentComparison;
+import io.hyperfoil.tools.horreum.api.data.ExperimentProfile;
+import io.hyperfoil.tools.horreum.api.alerting.DatasetLog;
+import io.hyperfoil.tools.horreum.api.data.DataSet;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
@@ -36,11 +36,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public interface ExperimentService {
    @GET
    @Path("{testId}/profiles")
-   Collection<ExperimentProfileDTO> profiles(@PathParam("testId") int testId);
+   Collection<ExperimentProfile> profiles(@PathParam("testId") int testId);
 
    @POST
    @Path("{testId}/profiles")
-   int addOrUpdateProfile(@PathParam("testId") int testId, @RequestBody(required = true) ExperimentProfileDTO profile);
+   int addOrUpdateProfile(@PathParam("testId") int testId, @RequestBody(required = true) ExperimentProfile profile);
 
    @DELETE
    @Path("{testId}/profiles/{profileId}")
@@ -64,18 +64,18 @@ public interface ExperimentService {
    class ExperimentResult {
       public static final String NEW_RESULT = "experiment_result/new";
 
-      public final ExperimentProfileDTO profile;
-      public final List<DatasetLogDTO> logs;
-      public final DataSetDTO.Info datasetInfo;
-      public final List<DataSetDTO.Info> baseline;
+      public final ExperimentProfile profile;
+      public final List<DatasetLog> logs;
+      public final DataSet.Info datasetInfo;
+      public final List<DataSet.Info> baseline;
       @JsonSerialize(keyUsing = ExperimentComparisonSerializer.class)
-      public final Map<ExperimentComparisonDTO, ComparisonResult> results;
+      public final Map<ExperimentComparison, ComparisonResult> results;
       public final JsonNode extraLabels;
       public final boolean notify;
 
-      public ExperimentResult(ExperimentProfileDTO profile, List<DatasetLogDTO> logs,
-                              DataSetDTO.Info datasetInfo, List<DataSetDTO.Info> baseline,
-                              Map<ExperimentComparisonDTO, ComparisonResult> results,
+      public ExperimentResult(ExperimentProfile profile, List<DatasetLog> logs,
+                              DataSet.Info datasetInfo, List<DataSet.Info> baseline,
+                              Map<ExperimentComparison, ComparisonResult> results,
                               JsonNode extraLabels, boolean notify) {
          this.profile = profile;
          this.logs = logs;
@@ -102,9 +102,9 @@ public interface ExperimentService {
       }
    }
 
-   class ExperimentComparisonSerializer extends JsonSerializer<ExperimentComparisonDTO> {
+   class ExperimentComparisonSerializer extends JsonSerializer<ExperimentComparison> {
       @Override
-      public void serialize(ExperimentComparisonDTO value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+      public void serialize(ExperimentComparison value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
          gen.writeFieldName(value.variableName);
       }
    }

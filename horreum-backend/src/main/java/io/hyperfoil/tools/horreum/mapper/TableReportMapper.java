@@ -1,15 +1,14 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.report.TableReportDAO;
-import io.hyperfoil.tools.horreum.entity.report.TableReportConfig;
-import io.hyperfoil.tools.horreum.api.report.TableReportConfigDTO;
-import io.hyperfoil.tools.horreum.api.report.TableReportDTO;
+import io.hyperfoil.tools.horreum.api.report.TableReportConfig;
+import io.hyperfoil.tools.horreum.api.report.TableReport;
 
 import java.util.stream.Collectors;
 
 public class TableReportMapper {
-    public static TableReportDTO from(TableReportDAO tr) {
-       TableReportDTO dto = new TableReportDTO();
+    public static TableReport from(TableReportDAO tr) {
+       TableReport dto = new TableReport();
        dto.id = tr.id;
        dto.config = fromTableReportConfig(tr.config);
        dto.created = tr.created;
@@ -23,8 +22,8 @@ public class TableReportMapper {
        return dto;
     }
 
-    public static TableReportConfigDTO fromTableReportConfig(TableReportConfig trc) {
-        TableReportConfigDTO dto = new TableReportConfigDTO();
+    public static TableReportConfig fromTableReportConfig(io.hyperfoil.tools.horreum.entity.report.TableReportConfig trc) {
+        TableReportConfig dto = new TableReportConfig();
         dto.id = trc.id;
         dto.title = trc.title;
         dto.test = TestMapper.from(trc.test);
@@ -46,8 +45,8 @@ public class TableReportMapper {
         return dto;
     }
 
-    public static TableReportDTO.DataDTO fromData(TableReportDAO.Data trd) {
-        TableReportDTO.DataDTO dto = new TableReportDTO.DataDTO();
+    public static TableReport.DataDTO fromData(TableReportDAO.Data trd) {
+        TableReport.DataDTO dto = new TableReport.DataDTO();
         dto.datasetId = trd.datasetId;
         dto.runId = trd.runId;
         dto.ordinal = trd.ordinal;
@@ -59,8 +58,8 @@ public class TableReportMapper {
         return dto;
     }
 
-    public static TableReportConfig toTableReportConfig(TableReportConfigDTO dto) {
-        TableReportConfig trc = new TableReportConfig();
+    public static io.hyperfoil.tools.horreum.entity.report.TableReportConfig toTableReportConfig(TableReportConfig dto) {
+        io.hyperfoil.tools.horreum.entity.report.TableReportConfig trc = new io.hyperfoil.tools.horreum.entity.report.TableReportConfig();
         trc.id = dto.id;
         trc.title = dto.title;
         trc.test = TestMapper.to(dto.test);

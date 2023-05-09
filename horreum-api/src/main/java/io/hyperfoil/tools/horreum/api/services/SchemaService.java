@@ -17,9 +17,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import io.hyperfoil.tools.horreum.api.SortDirection;
-import io.hyperfoil.tools.horreum.api.data.LabelDTO;
-import io.hyperfoil.tools.horreum.api.data.SchemaDTO;
-import io.hyperfoil.tools.horreum.api.data.TransformerDTO;
+import io.hyperfoil.tools.horreum.api.data.Label;
+import io.hyperfoil.tools.horreum.api.data.Schema;
+import io.hyperfoil.tools.horreum.api.data.Transformer;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
@@ -32,7 +32,7 @@ public interface SchemaService {
    @GET
    @Path("{id}")
    @Produces(MediaType.APPLICATION_JSON)
-   SchemaDTO getSchema(@PathParam("id") int id, @QueryParam("token") String token);
+   Schema getSchema(@PathParam("id") int id, @QueryParam("token") String token);
 
    @GET
    @Path("idByUri/{uri}")
@@ -41,10 +41,10 @@ public interface SchemaService {
    @POST
    @Consumes(MediaType.APPLICATION_JSON)
    @Produces(MediaType.APPLICATION_JSON)
-   Integer add(SchemaDTO schema);
+   Integer add(Schema schema);
 
    @GET
-   List<SchemaDTO> list(@QueryParam("limit") Integer limit,
+   List<Schema> list(@QueryParam("limit") Integer limit,
                      @QueryParam("page") Integer page,
                      @QueryParam("sort") String sort,
                      @QueryParam("direction") @DefaultValue("Ascending") SortDirection direction);
@@ -85,14 +85,14 @@ public interface SchemaService {
    @GET
    @Path("{schemaId}/transformers")
    @Produces(MediaType.APPLICATION_JSON)
-   List<TransformerDTO> listTransformers(@PathParam("schemaId") int schemaId);
+   List<Transformer> listTransformers(@PathParam("schemaId") int schemaId);
 
    @POST
    @Path("{schemaId}/transformers")
    @Consumes(MediaType.APPLICATION_JSON)
    @Produces(MediaType.APPLICATION_JSON)
    int addOrUpdateTransformer(@PathParam("schemaId") int schemaId,
-                              @RequestBody(required = true) TransformerDTO transformer);
+                              @RequestBody(required = true) Transformer transformer);
 
    @DELETE
    @Path("{schemaId}/transformers/{transformerId}")
@@ -101,12 +101,12 @@ public interface SchemaService {
    @GET
    @Path("{schemaId}/labels")
    @Produces(MediaType.APPLICATION_JSON)
-   List<LabelDTO> labels(@PathParam("schemaId") int schemaId);
+   List<Label> labels(@PathParam("schemaId") int schemaId);
 
    @POST
    @Path("{schemaId}/labels")
    @Consumes(MediaType.APPLICATION_JSON)
-   Integer addOrUpdateLabel(@PathParam("schemaId") int schemaId, @RequestBody(required = true) LabelDTO label);
+   Integer addOrUpdateLabel(@PathParam("schemaId") int schemaId, @RequestBody(required = true) Label label);
 
    @DELETE
    @Path("{schemaId}/labels/{labelId}")

@@ -11,7 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import io.hyperfoil.tools.horreum.api.alerting.NotificationSettingsDTO;
+import io.hyperfoil.tools.horreum.api.alerting.NotificationSettings;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
@@ -25,14 +25,14 @@ public interface NotificationService {
 
    @GET
    @Path("/settings")
-   List<NotificationSettingsDTO> settings(@Parameter(required = true) @QueryParam("name") String name,
-                                          @Parameter(required = true) @QueryParam("team") boolean team);
+   List<NotificationSettings> settings(@Parameter(required = true) @QueryParam("name") String name,
+                                       @Parameter(required = true) @QueryParam("team") boolean team);
 
    @POST
    @Path("/settings")
    void updateSettings(@Parameter(required = true) @QueryParam("name") String name,
                        @Parameter(required = true) @QueryParam("team") boolean team,
-                       @RequestBody(required = true) NotificationSettingsDTO[] settings);
+                       @RequestBody(required = true) NotificationSettings[] settings);
 
    @POST
    @Path("test")

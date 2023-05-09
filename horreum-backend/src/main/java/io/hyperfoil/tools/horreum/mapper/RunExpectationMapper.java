@@ -1,12 +1,12 @@
 package io.hyperfoil.tools.horreum.mapper;
 
 import io.hyperfoil.tools.horreum.entity.alerting.RunExpectationDAO;
-import io.hyperfoil.tools.horreum.api.alerting.RunExpectationDTO;
+import io.hyperfoil.tools.horreum.api.alerting.RunExpectation;
 
 public class RunExpectationMapper {
 
-    public static RunExpectationDTO from(RunExpectationDAO re) {
-        RunExpectationDTO dto = new RunExpectationDTO();
+    public static RunExpectation from(RunExpectationDAO re) {
+        RunExpectation dto = new RunExpectation();
         dto.id = re.id;
         dto.testId = re.testId;
         dto.expectedBy = re.expectedBy;

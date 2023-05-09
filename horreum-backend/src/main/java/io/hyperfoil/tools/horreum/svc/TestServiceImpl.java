@@ -121,7 +121,7 @@ public class TestServiceImpl implements TestService {
    @WithToken
    @WithRoles
    @PermitAll
-   public TestDTO get(int id, String token){
+   public Test get(int id, String token){
       TestDAO test = TestDAO.find("id", id).firstResult();
       if (test == null) {
          throw ServiceException.notFound("No test with id " + id);
@@ -131,7 +131,7 @@ public class TestServiceImpl implements TestService {
    }
 
    @Override
-   public TestDTO getByNameOrId(String input){
+   public Test getByNameOrId(String input){
       TestDAO test;
       if (input.matches("-?\\d+")) {
          int id = Integer.parseInt(input);
@@ -177,7 +177,7 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed(Roles.TESTER)
    @WithRoles
    @Transactional
-   public TestDTO add(TestDTO dto){
+   public Test add(Test dto){
       if (!identity.hasRole(dto.owner)) {
          throw ServiceException.forbidden("This user does not have the " + dto.owner + " role!");
       }
@@ -234,7 +234,7 @@ public class TestServiceImpl implements TestService {
    @Override
    @PermitAll
    @WithRoles
-   public List<TestDTO> list(String roles, Integer limit, Integer page, String sort, SortDirection direction){
+   public List<Test> list(String roles, Integer limit, Integer page, String sort, SortDirection direction){
       PanacheQuery<TestDAO> query;
       Set<String> actualRoles = null;
       if (Roles.hasRolesParam(roles)) {
@@ -344,7 +344,7 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed("tester")
    @WithRoles
    @Transactional
-   public int addToken(int testId, TestTokenDTO dto) {
+   public int addToken(int testId, TestToken dto) {
       if (dto.hasUpload() && !dto.hasRead()) {
          throw ServiceException.badRequest("Upload permission requires read permission as well.");
       }
@@ -360,7 +360,7 @@ public class TestServiceImpl implements TestService {
    @Override
    @RolesAllowed("tester")
    @WithRoles
-   public Collection<TestTokenDTO> tokens(int testId) {
+   public Collection<TestToken> tokens(int testId) {
       TestDAO t = TestDAO.findById(testId);
       Hibernate.initialize(t.tokens);
       return t.tokens.stream().map(TestTokenMapper::from).collect(Collectors.toList());
@@ -397,7 +397,7 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed("tester")
    @WithRoles
    @Transactional
-   public int updateView(int testId, ViewDTO dto) {
+   public int updateView(int testId, View dto) {
       if (testId <= 0) {
          throw ServiceException.badRequest("Missing test id");
       }
@@ -468,7 +468,7 @@ public class TestServiceImpl implements TestService {
    @RolesAllowed("tester")
    @WithRoles
    @Transactional
-   public ActionDTO updateAction(int testId, ActionDTO dto) {
+   public Action updateAction(int testId, Action dto) {
       if (testId <= 0) {
          throw ServiceException.badRequest("Missing test id");
       }
@@ -662,10 +662,10 @@ public class TestServiceImpl implements TestService {
       JsonNode experiments = config.remove("experiments");
       JsonNode subscriptions = config.remove("subscriptions");
       //Test test;
-      TestDTO dto;
+      Test dto;
       boolean forceUseTestId = false;
       try {
-         dto = Util.OBJECT_MAPPER.treeToValue(config, TestDTO.class);
+         dto = Util.OBJECT_MAPPER.treeToValue(config, Test.class);
          //test = TestMapper.to( dto);
          //test.ensureLinked();
          if (dto.tokens != null && !dto.tokens.isEmpty()) {
