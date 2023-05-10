@@ -6,8 +6,11 @@ import java.util.List;
 
 public class Watch {
     public Integer id;
+    @JsonProperty( required = true )
     public List<String> users;
+    @JsonProperty( required = true )
     public List<String> optout;
+    @JsonProperty( required = true )
     public List<String> teams;
     @JsonProperty( value = "testId", required = true )
     public Integer testId;

@@ -10,12 +10,18 @@ import java.util.Objects;
 public class Label {
     @JsonProperty( required = true )
     public Integer id;
+    @JsonProperty( required = true )
     public String name;
+    @JsonProperty( required = true )
     public Collection<Extractor> extractors;
     public String function;
+    @JsonProperty( required = true )
     public boolean filtering = true;
+    @JsonProperty( required = true )
     public boolean metrics = true;
+    @JsonProperty( required = true )
     public String owner;
+    @JsonProperty( required = true )
     public Access access = Access.PUBLIC;
 
     public Label() {

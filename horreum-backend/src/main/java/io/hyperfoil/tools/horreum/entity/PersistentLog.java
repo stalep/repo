@@ -8,8 +8,6 @@ import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotNull;
 
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,7 +29,7 @@ public abstract class PersistentLog extends PanacheEntityBase {
    @NotNull
    public int level;
 
-   @Schema(required = true)
+   @JsonProperty(required = true)
    @NotNull
    @Column(columnDefinition = "timestamp")
    public Instant timestamp;

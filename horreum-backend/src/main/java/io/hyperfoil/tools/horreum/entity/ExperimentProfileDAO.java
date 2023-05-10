@@ -71,7 +71,7 @@ public class ExperimentProfileDAO extends PanacheEntityBase {
    @Column(name = "baseline_filter")
    public String baselineFilter;
 
-   @Schema(required = true)
+   @JsonProperty(required = true)
    @ElementCollection(fetch = FetchType.EAGER)
    @CollectionTable(name="experiment_comparisons", joinColumns=@JoinColumn(name="profile_id"))
    @OrderBy("variable_id, model")

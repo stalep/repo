@@ -12,10 +12,13 @@ public class Schema {
     public static final int TYPE_ARRAY_ELEMENT = 2;
     @JsonProperty(required = true)
     public Integer id;
+    @JsonProperty(required = true)
     public String uri;
+    @JsonProperty(required = true)
     public String name;
     public String description;
     public JsonNode schema;
+    @JsonProperty(required = true)
     public String owner;
     public Access access;
     public String token;

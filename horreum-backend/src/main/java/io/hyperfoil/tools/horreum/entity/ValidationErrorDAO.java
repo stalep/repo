@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.hyperfoil.tools.horreum.entity.data.SchemaDAO;
 
 @Embeddable
-public class ValidationError {
+public class ValidationErrorDAO {
    @ManyToOne(fetch = FetchType.LAZY, optional = false)
    @JsonIgnore
    public SchemaDAO schema;

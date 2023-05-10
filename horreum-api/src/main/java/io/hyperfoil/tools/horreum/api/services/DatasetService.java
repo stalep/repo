@@ -93,7 +93,7 @@ public interface DatasetService {
       @Schema(required = true, implementation = Access.class)
       public int access;
       public ObjectNode view;
-      @Schema(required = true)
+      @JsonProperty(required = true)
       public List<SchemaService.SchemaUsage> schemas;
       @Schema(implementation = ValidationError[].class)
       public ArrayNode validationErrors;

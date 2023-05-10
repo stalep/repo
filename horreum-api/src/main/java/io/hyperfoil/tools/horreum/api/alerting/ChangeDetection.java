@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class ChangeDetection {
     @JsonProperty( required = true )
     public Integer id;
+    @JsonProperty( required = true )
     public String model;
+    @JsonProperty( required = true )
     public JsonNode config;
 
     public ChangeDetection() {

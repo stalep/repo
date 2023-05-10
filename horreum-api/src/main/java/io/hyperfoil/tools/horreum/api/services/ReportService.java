@@ -18,7 +18,6 @@ import io.hyperfoil.tools.horreum.api.SortDirection;
 import io.hyperfoil.tools.horreum.api.report.ReportComment;
 import io.hyperfoil.tools.horreum.api.report.TableReportConfig;
 import io.hyperfoil.tools.horreum.api.report.TableReport;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -95,7 +94,7 @@ public interface ReportService {
       public int id;
       @JsonProperty(required = true)
       public int configId;
-      @Schema(required = true)
+      @JsonProperty(required = true)
       public Instant created;
    }
 }

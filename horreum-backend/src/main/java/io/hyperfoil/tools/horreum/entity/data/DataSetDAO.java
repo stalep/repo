@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.JsonNodeBinaryType;
 
 import io.hyperfoil.tools.horreum.api.ApiIgnore;
-import io.hyperfoil.tools.horreum.entity.ValidationError;
+import io.hyperfoil.tools.horreum.entity.ValidationErrorDAO;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.common.constraint.NotNull;
 
@@ -83,7 +83,7 @@ public class DataSetDAO extends OwnedEntityBase {
 
    @CollectionTable
    @ElementCollection
-   public Collection<ValidationError> validationErrors;
+   public Collection<ValidationErrorDAO> validationErrors;
 
    @JsonProperty("runId")
    public int getRunId() {

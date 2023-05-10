@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hyperfoil.tools.horreum.api.data.PersistentLog;
 
 public class DatasetLog extends PersistentLog {
+    @JsonProperty( required = true )
     public String source;
 
     @JsonProperty( value = "testId", required = true )

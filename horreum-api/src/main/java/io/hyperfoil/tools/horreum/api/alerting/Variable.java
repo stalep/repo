@@ -10,16 +10,20 @@ import java.util.Set;
 public class Variable {
     @JsonProperty( required = true )
     public Integer id;
+    @JsonProperty(required = true)
     public int testId;
+    @JsonProperty(required = true)
     public String name;
     public String group;
+    @JsonProperty(required = true)
     public int order;
+    @JsonProperty(required = true)
     public JsonNode labels;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public String calculation;
     @Schema(
         required = true,
-        implementation = ChangeDetection.class
+        implementation = ChangeDetection[].class
     )
     public Set<ChangeDetection> changeDetection;
 

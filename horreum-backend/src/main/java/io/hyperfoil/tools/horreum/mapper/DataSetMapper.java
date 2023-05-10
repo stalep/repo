@@ -4,6 +4,8 @@ import io.hyperfoil.tools.horreum.entity.data.DataSetDAO;
 import io.hyperfoil.tools.horreum.api.data.DataSet;
 import io.hyperfoil.tools.horreum.entity.data.RunDAO;
 
+import java.util.stream.Collectors;
+
 public class DataSetMapper {
 
     public static DataSet from(DataSetDAO ds) {
@@ -19,6 +21,9 @@ public class DataSetMapper {
         dto.ordinal = ds.ordinal;
         dto.description = ds.description;
         dto.data = ds.data;
+
+        if(ds.validationErrors != null)
+            dto.validationErrors = ds.validationErrors.stream().map(ValidationErrorMapper::fromValidationError).collect(Collectors.toList());
 
         return dto;
     }

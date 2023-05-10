@@ -7,11 +7,12 @@ import java.time.Instant;
 import java.util.Objects;
 
 public class MissingDataRule {
-     @JsonProperty( required = true )
+    @JsonProperty( required = true )
     public Integer id;
     public String name;
     public ArrayNode labels;
     public String condition;
+    @JsonProperty( required = true )
     public long maxStaleness;
     public Instant lastNotification;
 

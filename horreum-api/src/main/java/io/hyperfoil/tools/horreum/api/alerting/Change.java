@@ -10,10 +10,13 @@ public class Change {
     public static final String EVENT_NEW = "change/new";
     @JsonProperty( required = true )
     public int id;
+    @JsonProperty( required = true )
     public Variable variable;
     @JsonIgnore
     public DataSet dataset;
+    @JsonProperty( required = true )
     public Instant timestamp;
+    @JsonProperty( required = true )
     public boolean confirmed;
     public String description;
 

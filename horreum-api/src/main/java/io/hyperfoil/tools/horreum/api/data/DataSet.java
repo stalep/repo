@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
 
 public class DataSet {
@@ -15,14 +16,17 @@ public class DataSet {
     public String description;
 
     public Integer testid;
+    @JsonProperty( required = true )
     public String owner;
+    @JsonProperty( required = true )
     public Access access;
     public JsonNode data;
     public int ordinal;
 
+    public Collection<ValidationError> validationErrors;
+
     @JsonProperty("runId")
     public Integer runId;
-
     @JsonIgnore
     public Info getInfo() {
         return new Info(this.id, this.runId, this.ordinal, this.testid);

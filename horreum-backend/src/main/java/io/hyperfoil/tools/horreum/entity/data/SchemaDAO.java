@@ -2,7 +2,7 @@ package io.hyperfoil.tools.horreum.entity.data;
 
 import java.util.Collection;
 
-import io.hyperfoil.tools.horreum.entity.ValidationError;
+import io.hyperfoil.tools.horreum.entity.ValidationErrorDAO;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import org.hibernate.annotations.GenericGenerator;
@@ -93,9 +93,9 @@ public class SchemaDAO extends ProtectedBaseEntity {
 
    public static class ValidationEvent {
       public int id; // context = run/dataset depends on event name
-      public Collection<ValidationError> errors;
+      public Collection<ValidationErrorDAO> errors;
 
-      public ValidationEvent(int id, Collection<ValidationError> errors) {
+      public ValidationEvent(int id, Collection<ValidationErrorDAO> errors) {
          this.id = id;
          this.errors = errors;
       }

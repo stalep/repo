@@ -9,21 +9,26 @@ import java.util.Collection;
 public class Test {
     @JsonProperty(required = true)
     public Integer id;
+    @JsonProperty(required = true)
     public String name;
     public String folder;
     public String description;
+    @JsonProperty(required = true)
     public String owner;
+    @JsonProperty(required = true)
     public Access access;
     public Collection<TestToken> tokens;
-    @Schema(implementation = String.class)
+    @Schema(implementation = String[].class)
     public JsonNode timelineLabels;
     public String timelineFunction;
-    @Schema(implementation = String.class)
+    @Schema(implementation = String[].class)
     public JsonNode fingerprintLabels;
     public String fingerprintFilter;
+    @JsonProperty(required = true)
     public Collection<View> views;
     public String compareUrl;
     public Collection<Transformer> transformers;
+    @JsonProperty(required = true)
     public Boolean notificationsEnabled;
 
     public Test() {

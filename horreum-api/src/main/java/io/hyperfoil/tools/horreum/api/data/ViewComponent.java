@@ -11,8 +11,11 @@ import java.util.Objects;
 public class ViewComponent {
     @JsonProperty(required = true)
     public Integer id;
+    @JsonProperty(required = true)
     public int headerOrder;
+    @JsonProperty(required = true)
     public String headerName;
+    @JsonProperty(required = true)
     public JsonNode labels;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public String render;

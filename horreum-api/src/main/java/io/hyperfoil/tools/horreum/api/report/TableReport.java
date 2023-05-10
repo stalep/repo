@@ -15,8 +15,11 @@ public class TableReport {
     public TableReportConfig config;
     @Schema(required = true, type = SchemaType.NUMBER)
     public Instant created;
+    @JsonProperty(required = true)
     public Collection<ReportComment> comments;
+    @JsonProperty(required = true)
     public Collection<DataDTO> data;
+    @JsonProperty(required = true)
     public Collection<ReportLog> logs;
 
     public TableReport() {
@@ -36,12 +39,19 @@ public class TableReport {
 
     @Schema(name = "TableReportData")
     public static class DataDTO {
+        @JsonProperty(required = true)
         public int datasetId;
+        @JsonProperty(required = true)
         public int runId;
+        @JsonProperty(required = true)
         public int ordinal;
+        @JsonProperty(required = true)
         public String category;
+        @JsonProperty(required = true)
         public String series;
+        @JsonProperty(required = true)
         public String scale;
+        @JsonProperty(required = true)
         public ArrayNode values;
 
         public DataDTO() {

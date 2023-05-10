@@ -9,7 +9,7 @@ import io.hyperfoil.tools.horreum.mapper.TransformerMapper;
 import io.hyperfoil.tools.horreum.api.services.SchemaService;
 import io.hyperfoil.tools.horreum.api.SortDirection;
 import io.hyperfoil.tools.horreum.bus.MessageBus;
-import io.hyperfoil.tools.horreum.entity.ValidationError;
+import io.hyperfoil.tools.horreum.entity.ValidationErrorDAO;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.hyperfoil.tools.horreum.server.WithToken;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
@@ -310,7 +310,7 @@ public class SchemaServiceImpl implements SchemaService {
       for (var item : dataset.data) {
          String uri = item.path("$schema").asText();
          if (uri == null || uri.isBlank()) {
-            ValidationError error = new ValidationError();
+            ValidationErrorDAO error = new ValidationErrorDAO();
             error.error = JsonNodeFactory.instance.objectNode().put("type", "No schema").put("message", "Element in the dataset does not reference any schema through the '$schema' property.");
             dataset.validationErrors.add(error);
          }
@@ -348,7 +348,7 @@ public class SchemaServiceImpl implements SchemaService {
       }
    }
 
-   private void validateData(JsonNode data, Predicate<String> filter, Consumer<ValidationError> consumer) {
+   private void validateData(JsonNode data, Predicate<String> filter, Consumer<ValidationErrorDAO> consumer) {
       Map<String, List<JsonNode>> toCheck = new HashMap<>();
       addIfHasSchema(toCheck, data);
       for (JsonNode child : data) {
@@ -382,7 +382,7 @@ public class SchemaServiceImpl implements SchemaService {
 
             for (JsonNode node : toCheck.get(schemaUri)) {
                factory.getSchema(rootSchema.schema).validate(node).forEach(msg -> {
-                  ValidationError error = new ValidationError();
+                  ValidationErrorDAO error = new ValidationErrorDAO();
                   error.schema = rootSchema;
                   error.error = Util.OBJECT_MAPPER.valueToTree(msg);
                   consumer.accept(error);
@@ -391,7 +391,7 @@ public class SchemaServiceImpl implements SchemaService {
          } catch (Throwable e) {
             // Do not let messed up schemas fail the upload
             log.error("Schema validation failed", e);
-            ValidationError error = new ValidationError();
+            ValidationErrorDAO error = new ValidationErrorDAO();
             error.schema = rootSchema;
             error.error = JsonNodeFactory.instance.objectNode().put("type", "Execution error").put("message", e.getMessage());
             consumer.accept(error);

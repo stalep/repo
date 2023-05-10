@@ -12,15 +12,15 @@ public class ExperimentProfile {
     public String name;
 
     public Integer testId;
-    @Schema(implementation = String.class, required = true )
+    @Schema(implementation = String[].class, required = true )
     public JsonNode selectorLabels;
     public String selectorFilter;
-    @Schema(implementation = String.class, required = true )
+    @Schema(implementation = String[].class, required = true )
     public JsonNode baselineLabels;
     public String baselineFilter;
     @Schema(required = true )
     public Collection<ExperimentComparison> comparisons;
-    @Schema(implementation = String.class )
+    @Schema(implementation = String[].class )
     public JsonNode extraLabels;
 
     public ExperimentProfile() {

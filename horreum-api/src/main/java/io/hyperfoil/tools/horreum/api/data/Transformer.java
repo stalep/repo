@@ -7,9 +7,11 @@ import java.util.Collection;
 public class Transformer {
     @JsonProperty(required = true)
     public Integer id;
+    @JsonProperty(required = true)
     public String name;
     public String description;
     public String targetSchemaUri;
+    @JsonProperty(required = true)
     public Collection<Extractor> extractors;
     public String function;
     @JsonProperty(value = "schemaId", required = true)
@@ -21,6 +23,7 @@ public class Transformer {
     @JsonProperty(value = "schemaName", required = true)
     public String schemaName;
 
+    @JsonProperty(required = true)
     public String owner;
 
     public Access access = Access.PUBLIC;

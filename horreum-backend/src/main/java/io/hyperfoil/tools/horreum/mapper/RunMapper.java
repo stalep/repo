@@ -19,7 +19,7 @@ public class RunMapper {
         dto.metadata = run.metadata;
         dto.trashed = run.trashed;
         if(run.validationErrors != null)
-            dto.validationErrors = run.validationErrors.stream().map(RunMapper::fromValidationError).collect(Collectors.toList());
+            dto.validationErrors = run.validationErrors.stream().map(ValidationErrorMapper::fromValidationError).collect(Collectors.toList());
         if(run.datasets != null)
             dto.datasets = run.datasets.stream().map(DataSetMapper::from).collect(Collectors.toList());
         dto.owner = run.owner;
@@ -38,25 +38,12 @@ public class RunMapper {
        run.data = dto.data;
        run.metadata = dto.metadata;
        run.trashed = dto.trashed;
-       run.validationErrors = dto.validationErrors.stream().map(RunMapper::toValidationError).collect(Collectors.toList());
+       run.validationErrors = dto.validationErrors.stream().map(ValidationErrorMapper::toValidationError).collect(Collectors.toList());
        if(dto.datasets != null)
            run.datasets = dto.datasets.stream().map( dsDTO -> DataSetMapper.to(dsDTO, run)).collect(Collectors.toList());
 
        return run;
     }
 
-    public static ValidationError fromValidationError(io.hyperfoil.tools.horreum.entity.ValidationError ve) {
-        ValidationError dto = new ValidationError();
-        dto.schemaId = ve.getSchemaId();
-        dto.error = ve.error;
-        return dto;
-    }
-
-    public static io.hyperfoil.tools.horreum.entity.ValidationError toValidationError(ValidationError dto) {
-        io.hyperfoil.tools.horreum.entity.ValidationError ve = new io.hyperfoil.tools.horreum.entity.ValidationError();
-        ve.error = dto.error;
-
-        return ve;
-    }
 
 }

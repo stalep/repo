@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.horreum.entity.data;
 
-import io.hyperfoil.tools.horreum.entity.ValidationError;
+import io.hyperfoil.tools.horreum.entity.ValidationErrorDAO;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -75,5 +75,5 @@ public class RunDAO extends ProtectedBaseEntity {
 
    @CollectionTable
    @ElementCollection
-   public Collection<ValidationError> validationErrors;
+   public Collection<ValidationErrorDAO> validationErrors;
 }

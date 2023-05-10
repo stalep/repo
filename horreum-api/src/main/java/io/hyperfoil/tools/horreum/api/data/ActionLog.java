@@ -1,7 +1,11 @@
 package io.hyperfoil.tools.horreum.api.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ActionLog extends PersistentLog {
+    @JsonProperty( required = true )
     public int testId;
+    @JsonProperty( required = true )
     public String event;
     public String type;
 

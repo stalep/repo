@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.horreum.api.data;
 
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,11 +15,13 @@ public abstract class PersistentLog {
    @JsonProperty(required = true)
    public Long id;
 
+   @JsonProperty(required = true)
    public int level;
 
-   @Schema(required = true)
+   @JsonProperty(required = true)
    public Instant timestamp;
 
+   @JsonProperty(required = true)
    public String message;
 
    public PersistentLog(int level, String message) {

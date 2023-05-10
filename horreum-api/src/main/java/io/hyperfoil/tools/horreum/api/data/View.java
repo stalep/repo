@@ -7,8 +7,10 @@ import java.util.List;
 public class View {
     @JsonProperty(required = true)
     public Integer id;
+    @JsonProperty(required = true)
     public String name;
     public Integer testId;
+    @JsonProperty(required = true)
     public List<ViewComponent> components;
 
     public View() {

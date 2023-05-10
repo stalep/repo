@@ -9,13 +9,19 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class Action {
     @JsonProperty( required = true )
     public Integer id;
+    @JsonProperty( required = true )
     public String event;
+    @JsonProperty( required = true )
     public String type;
+    @JsonProperty( required = true )
     public JsonNode config;
     @JsonIgnore
     public JsonNode secrets;
+    @JsonProperty( required = true )
     public Integer testId;
+    @JsonProperty( required = true )
     public boolean active = true;
+    @JsonProperty( required = true )
     public boolean runAlways;
 
     public Action() {

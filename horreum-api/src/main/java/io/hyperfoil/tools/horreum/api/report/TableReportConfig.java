@@ -9,6 +9,7 @@ import java.util.List;
 public class TableReportConfig {
     @JsonProperty(required = true)
     public Integer id;
+    @JsonProperty(required = true)
     public String title;
     public Test test;
     public ArrayNode filterLabels;
@@ -16,6 +17,7 @@ public class TableReportConfig {
     public ArrayNode categoryLabels;
     public String categoryFunction;
     public String categoryFormatter;
+    @JsonProperty(required = true)
     public ArrayNode seriesLabels;
     public String seriesFunction;
     public String seriesFormatter;
@@ -23,6 +25,7 @@ public class TableReportConfig {
     public String scaleFunction;
     public String scaleFormatter;
     public String scaleDescription;
+    @JsonProperty(required = true)
     public List<ReportComponent> components;
 
     public TableReportConfig() {

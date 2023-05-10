@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.horreum.api.data;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
 import java.util.function.Function;
@@ -9,10 +10,14 @@ public class TestToken {
     public static final int READ = 1;
     public static final int MODIFY = 2;
     public static final int UPLOAD = 4;
+    @JsonProperty(required = true)
     public Integer id;
     public Integer testId;
+    @JsonProperty(required = true)
     private String value;
+    @JsonProperty(required = true)
     public int permissions;
+    @JsonProperty(required = true)
     public String description;
 
     public TestToken() {

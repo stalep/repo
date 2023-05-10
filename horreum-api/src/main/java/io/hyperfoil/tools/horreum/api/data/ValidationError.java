@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class ValidationError {
     public int schemaId;
+    @JsonProperty(required = true)
     public JsonNode error;
 
     public ValidationError() {
