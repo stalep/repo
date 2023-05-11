@@ -6,23 +6,24 @@ import io.hyperfoil.tools.horreum.entity.ValidationErrorDAO;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Parameter;
-import org.hibernate.annotations.Type;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.NamedNativeQueries;
-import javax.persistence.NamedNativeQuery;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedNativeQueries;
+import jakarta.persistence.NamedNativeQuery;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.hibernate.type.SqlTypes;
 
 @NamedNativeQueries({
    @NamedNativeQuery(
@@ -88,7 +89,7 @@ public class SchemaDAO extends ProtectedBaseEntity {
 
    public String description;
 
-   @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
+   @JdbcTypeCode( SqlTypes.JSON )
    public JsonNode schema;
 
    public static class ValidationEvent {

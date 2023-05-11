@@ -19,14 +19,14 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.core.Vertx;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.Query;
-import javax.transaction.Transactional;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.transaction.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -47,11 +47,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.AliasToBeanResultTransformer;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.TextType;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -340,11 +340,20 @@ public class SchemaServiceImpl implements SchemaService {
          messageBus.executeForTest(testId, () -> validateRunData(runId, schemaFilter))
       );
       // Datasets might be re-created if URI is changing, so we might work on old, non-existent ones
-      ScrollableResults results = Util.scroll(em.createNativeQuery("SELECT id, testid FROM dataset WHERE ?1 IN (SELECT jsonb_array_elements(data)->>'$schema')").setParameter(1, schema.uri));
+      ScrollableResults<RecreateDataset> results =
+              em.createNativeQuery("SELECT id, testid FROM dataset WHERE ?1 IN (SELECT jsonb_array_elements(data)->>'$schema')").setParameter(1, schema.uri)
+                      .unwrap(NativeQuery.class)
+                      .setTupleTransformer((tuple, aliases) -> {
+                         RecreateDataset r = new RecreateDataset();
+                         r.datasetId = (int) tuple[0];
+                         r.testId = (int) tuple[1];
+                         return r;
+                      })
+                      .unwrap(NativeQuery.class).setReadOnly(true).setFetchSize(100)
+                      .scroll(ScrollMode.FORWARD_ONLY);
       while (results.next()) {
-         int datasetId = (int) results.get(0);
-         int testId = (int) results.get(1);
-         messageBus.executeForTest(testId, () -> validateDatasetData(datasetId, schemaFilter));
+         RecreateDataset r = results.get();
+         messageBus.executeForTest(r.testId, () -> validateDatasetData(r.datasetId, schemaFilter));
       }
    }
 
@@ -464,14 +473,18 @@ public class SchemaServiceImpl implements SchemaService {
             "filterlabels, categorylabels, serieslabels, scalelabels FROM tablereportconfig trc JOIN test ON test.id = trc.testid " +
             "WHERE json_contains(filterlabels, ?1) OR json_contains(categorylabels, ?1) OR json_contains(serieslabels, ?1) OR json_contains(scalelabels, ?1);")
             .setParameter(1, label).unwrap(NativeQuery.class)
-            .addScalar("testid", IntegerType.INSTANCE)
-            .addScalar("testname", TextType.INSTANCE)
-            .addScalar("configid", IntegerType.INSTANCE)
-            .addScalar("title", TextType.INSTANCE)
-            .addScalar("filterlabels", JsonNodeBinaryType.INSTANCE)
-            .addScalar("categorylabels", JsonNodeBinaryType.INSTANCE)
-            .addScalar("serieslabels", JsonNodeBinaryType.INSTANCE)
-            .addScalar("scalelabels", JsonNodeBinaryType.INSTANCE)
+            .addScalar("testid", StandardBasicTypes.INTEGER )
+            .addScalar("testname", StandardBasicTypes.TEXT )
+            .addScalar("configid", StandardBasicTypes.INTEGER)
+            .addScalar("title", StandardBasicTypes.TEXT)
+              //.addScalar("filterlabels", JsonNodeBinaryType.INSTANCE)
+              //.addScalar("categorylabels", JsonNodeBinaryType.INSTANCE)
+              //.addScalar("serieslabels", JsonNodeBinaryType.INSTANCE)
+              //.addScalar("scalelabels", JsonNodeBinaryType.INSTANCE)
+            .addScalar("filterlabels", StandardBasicTypes.TEXT)
+            .addScalar("categorylabels", StandardBasicTypes.TEXT)
+            .addScalar("serieslabels", StandardBasicTypes.TEXT)
+            .addScalar("scalelabels", StandardBasicTypes.TEXT)
             .getResultList()) {
          Object[] columns = (Object[]) row;
          StringBuilder where = new StringBuilder();
@@ -783,5 +796,10 @@ public class SchemaServiceImpl implements SchemaService {
          }
          where.append(type);
       }
+   }
+
+   class RecreateDataset {
+      private int datasetId;
+      private int testId;
    }
 }

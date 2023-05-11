@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Assertions;
 
 import io.hyperfoil.tools.HorreumClient;
 
-import javax.ws.rs.BadRequestException;
+import jakarta.ws.rs.BadRequestException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

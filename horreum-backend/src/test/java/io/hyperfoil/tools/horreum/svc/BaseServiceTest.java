@@ -25,12 +25,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Status;
-import javax.transaction.TransactionManager;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Status;
+import jakarta.transaction.TransactionManager;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 
 import io.hyperfoil.tools.horreum.api.alerting.MissingDataRule;
 import io.hyperfoil.tools.horreum.api.data.*;
@@ -39,6 +39,7 @@ import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.entity.data.ViewComponent;
 import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -634,7 +635,8 @@ public class BaseServiceTest {
             for (String table : tableContents.keySet()) {
                //noinspection unchecked
                List<JsonNode> rows = em.createNativeQuery("SELECT to_jsonb(t) AS json FROM \"" + table + "\" t;")
-                     .unwrap(NativeQuery.class).addScalar("json", JsonNodeBinaryType.INSTANCE).getResultList();
+                     .unwrap(NativeQuery.class).addScalar("json", StandardBasicTypes.TEXT).getResultList();
+                     //.unwrap(NativeQuery.class).addScalar("json", JsonNodeBinaryType.INSTANCE).getResultList();
                List<JsonNode> expected = tableContents.get(table);
 
                assertEquals(expected.size(), rows.size());
@@ -669,7 +671,8 @@ public class BaseServiceTest {
             for (String table : tables) {
                //noinspection unchecked
                tableContents.put(table, em.createNativeQuery("SELECT to_jsonb(t) AS json FROM \"" + table + "\" t;")
-                     .unwrap(NativeQuery.class).addScalar("json", JsonNodeBinaryType.INSTANCE).getResultList());
+                     .unwrap(NativeQuery.class).addScalar("json", StandardBasicTypes.TEXT).getResultList());
+                     //.unwrap(NativeQuery.class).addScalar("json", JsonNodeBinaryType.INSTANCE).getResultList());
             }
          }
          return null;

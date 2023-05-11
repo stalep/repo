@@ -50,7 +50,7 @@ public class ActionServiceTest extends BaseServiceTest {
    @org.junit.jupiter.api.Test
    public void testAddGlobalAction() {
       String responseType = addGlobalAction(TestDAO.EVENT_NEW, "https://attacker.com")
-            .then().statusCode(400).extract().header(javax.ws.rs.core.HttpHeaders.CONTENT_TYPE);
+            .then().statusCode(400).extract().header(jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE);
       // constraint violations are mapped to 400 + JSON response, we want explicit error
       assertTrue(responseType.startsWith("text/plain")); // text/plain;charset=UTF-8
 

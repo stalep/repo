@@ -10,9 +10,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.TransactionManager;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.TransactionManager;
 
 import io.quarkus.test.junit.TestProfile;
 import org.jboss.logging.Logger;

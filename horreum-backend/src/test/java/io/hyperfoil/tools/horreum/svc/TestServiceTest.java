@@ -23,6 +23,7 @@ import io.hyperfoil.tools.horreum.api.data.ViewComponent;
 import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 import org.junit.jupiter.api.TestInfo;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -148,7 +149,8 @@ public class TestServiceTest extends BaseServiceTest {
          @SuppressWarnings("unchecked") List<JsonNode> list = em.createNativeQuery(
                "SELECT value FROM dataset_view WHERE dataset_id = ?1 AND view_id = ?2")
                .setParameter(1, event.dataset.id).setParameter(2, defaultView.id)
-               .unwrap(NativeQuery.class).addScalar("value", JsonNodeBinaryType.INSTANCE)
+               .unwrap(NativeQuery.class).addScalar("value", StandardBasicTypes.TEXT)
+                 //.unwrap(NativeQuery.class).addScalar("value", JsonNodeBinaryType.INSTANCE)
                .getResultList();
          return !list.isEmpty() && !list.get(0).isEmpty();
       });

@@ -25,19 +25,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.PersistenceException;
-import javax.persistence.Query;
-import javax.transaction.TransactionManager;
-import javax.transaction.Transactional;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.Query;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 import io.hyperfoil.tools.horreum.api.ConditionConfig;
 import io.hyperfoil.tools.horreum.api.alerting.*;
@@ -61,9 +61,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.AliasToBeanResultTransformer;
 import org.hibernate.transform.Transformers;
-import org.hibernate.type.InstantType;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.TextType;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -228,9 +226,10 @@ public class AlertingServiceImpl implements AlertingService {
       @SuppressWarnings("unchecked") List<Object[]> ruleValues = em.createNativeQuery(LOOKUP_RULE_LABEL_VALUES)
             .setParameter(1, dataset.id).setParameter(2, dataset.testid)
             .unwrap(NativeQuery.class)
-            .addScalar("rule_id", IntegerType.INSTANCE)
-            .addScalar("condition", TextType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE)
+            .addScalar("rule_id", StandardBasicTypes.INTEGER)
+            .addScalar("condition", StandardBasicTypes.TEXT)
+            .addScalar("value", StandardBasicTypes.TEXT)
+              //.addScalar("value", JsonNodeBinaryType.INSTANCE)
             .getResultList();
       Util.evaluateMany(ruleValues, row -> (String) row[1], row -> (JsonNode) row[2],
             (row, result) -> {
@@ -284,7 +283,9 @@ public class AlertingServiceImpl implements AlertingService {
       @SuppressWarnings("unchecked") Optional<JsonNode> result =
             em.createNativeQuery("SELECT fp.fingerprint FROM fingerprint fp WHERE dataset_id = ?1")
                   .setParameter(1, dataset.id)
-                  .unwrap(NativeQuery.class).addScalar("fingerprint", JsonNodeBinaryType.INSTANCE)
+                  .unwrap(NativeQuery.class)
+                  .addScalar("fingerprint", StandardBasicTypes.TEXT)
+                    //.addScalar("fingerprint", JsonNodeBinaryType.INSTANCE)
                   .getResultStream().findFirst();
       JsonNode fingerprint;
       if (result.isPresent()) {
@@ -385,12 +386,13 @@ public class AlertingServiceImpl implements AlertingService {
             .setParameter(1, dataset.testid)
             .setParameter(2, dataset.id)
             .unwrap(NativeQuery.class)
-            .addScalar("variableId", IntegerType.INSTANCE)
-            .addScalar("name", TextType.INSTANCE)
-            .addScalar("group", TextType.INSTANCE)
-            .addScalar("calculation", TextType.INSTANCE)
-            .addScalar("numLabels", IntegerType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE)
+            .addScalar("variableId", StandardBasicTypes.INTEGER)
+            .addScalar("name", StandardBasicTypes.TEXT)
+            .addScalar("group", StandardBasicTypes.TEXT)
+            .addScalar("calculation", StandardBasicTypes.TEXT)
+            .addScalar("numLabels", StandardBasicTypes.INTEGER)
+            .addScalar("value", StandardBasicTypes.TEXT)
+              //.addScalar("value", JsonNodeBinaryType.INSTANCE)
             .setResultTransformer(new AliasToBeanResultTransformer(VariableData.class))
             .getResultList();
       if (debug) {
@@ -402,8 +404,9 @@ public class AlertingServiceImpl implements AlertingService {
             .setParameter(1, dataset.testid)
             .setParameter(2, dataset.id)
             .unwrap(NativeQuery.class)
-            .addScalar("timeline_function", TextType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE)
+            .addScalar("timeline_function", StandardBasicTypes.TEXT)
+            .addScalar("value", StandardBasicTypes.TEXT)
+              //.addScalar("value", JsonNodeBinaryType.INSTANCE)
             .getResultList();
       Instant timestamp = dataset.start;
       if (!timestampList.isEmpty()) {
@@ -557,9 +560,10 @@ public class AlertingServiceImpl implements AlertingService {
                   "WHERE dp.variable_id = ?1 AND (timestamp > ?2 OR (timestamp = ?2 AND ?3)) AND json_equals(fp.fingerprint, ?4)")
             .unwrap(NativeQuery.class)
             .setParameter(1, variable.id)
-            .setParameter(2, valid != null ? valid.timestamp : LONG_TIME_AGO, InstantType.INSTANCE)
+            .setParameter(2, valid != null ? valid.timestamp : LONG_TIME_AGO, StandardBasicTypes.TIMESTAMP)
             .setParameter(3, valid == null || !valid.inclusive)
-            .setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE)
+            .setParameter(4, fingerprint, StandardBasicTypes.TEXT)
+              //.setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE)
             .getResultStream().filter(Objects::nonNull).findFirst().orElse(null);
       if (nextTimestamp == null) {
          log.debugf("No further datapoints for change detection");
@@ -574,9 +578,10 @@ public class AlertingServiceImpl implements AlertingService {
                "AND json_equals(fp.fingerprint, ?4))")
                .unwrap(NativeQuery.class)
                .setParameter(1, variable.id)
-               .setParameter(2, valid.timestamp, InstantType.INSTANCE)
+               .setParameter(2, valid.timestamp, StandardBasicTypes.TIMESTAMP)
                .setParameter(3, !valid.inclusive)
-               .setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE)
+               .setParameter(4, fingerprint, StandardBasicTypes.TEXT)
+                 //.setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE)
                .executeUpdate();
          log.debugf("Deleted %d changes %s %s for variable %d, fingerprint %s", numDeleted, valid.inclusive ? ">" : ">=", valid.timestamp, variable.id, fingerprint);
       }
@@ -590,7 +595,8 @@ public class AlertingServiceImpl implements AlertingService {
             .setParameter(2, valid != null ? valid.timestamp : VERY_DISTANT_FUTURE)
             .setParameter(3, valid == null || valid.inclusive)
             .unwrap(org.hibernate.query.Query.class)
-            .setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE);
+            .setParameter(4, fingerprint, StandardBasicTypes.TEXT);
+      //.setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE);
       ChangeDAO lastChange = changeQuery.setMaxResults(1).getResultStream().findFirst().orElse(null);
 
       Instant changeTimestamp = LONG_TIME_AGO;
@@ -608,7 +614,9 @@ public class AlertingServiceImpl implements AlertingService {
             .setParameter(1, variable)
             .setParameter(2, changeTimestamp)
             .setParameter(3, nextTimestamp.toInstant())
-            .unwrap(org.hibernate.query.Query.class).setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE)
+            .unwrap(org.hibernate.query.Query.class)
+            .setParameter(4, fingerprint, StandardBasicTypes.TEXT)
+              //.setParameter(4, fingerprint, JsonNodeBinaryType.INSTANCE)
             .getResultList();
       // Last datapoint is already in the list
       if (dataPoints.isEmpty()) {
@@ -842,7 +850,8 @@ public class AlertingServiceImpl implements AlertingService {
       List<ChangeDAO> changes = em.createNativeQuery("SELECT change.* FROM change JOIN fingerprint fp ON change.dataset_id = fp.dataset_id " +
             "WHERE variable_id = ?1 AND json_equals(fp.fingerprint, ?2)", ChangeDAO.class)
             .setParameter(1, varId).unwrap(NativeQuery.class)
-            .setParameter(2, fp, JsonNodeBinaryType.INSTANCE)
+            .setParameter(2, fp, StandardBasicTypes.TEXT)
+              //.setParameter(2, fp, JsonNodeBinaryType.INSTANCE)
             .getResultList();
       return changes.stream().map(ChangeMapper::from).collect(Collectors.toList());
    }
@@ -1010,7 +1019,8 @@ public class AlertingServiceImpl implements AlertingService {
    public List<DatapointLastTimestamp> findLastDatapoints(LastDatapointsParams params) {
       Query query = em.createNativeQuery(FIND_LAST_DATAPOINTS)
             .unwrap(NativeQuery.class)
-            .setParameter(1, Util.parseFingerprint(params.fingerprint), JsonNodeBinaryType.INSTANCE)
+            .setParameter(1, Util.parseFingerprint(params.fingerprint), StandardBasicTypes.TEXT)
+              //.setParameter(1, Util.parseFingerprint(params.fingerprint), JsonNodeBinaryType.INSTANCE)
             .setParameter(2, params.variables, IntArrayType.INSTANCE);
       SqlServiceImpl.setResultTransformer(query, Transformers.aliasToBean(DatapointLastTimestamp.class));
       //noinspection unchecked
@@ -1156,7 +1166,8 @@ public class AlertingServiceImpl implements AlertingService {
       JsonNode value = (JsonNode) em.createNativeQuery(LOOKUP_LABEL_VALUE_FOR_RULE)
             .setParameter(1, datasetId).setParameter(2, rule.id)
             .unwrap(NativeQuery.class)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE)
+            .addScalar("value", StandardBasicTypes.TEXT)
+              //.addScalar("value", JsonNodeBinaryType.INSTANCE)
             .getSingleResult();
       boolean match = true;
       if (rule.condition != null && !rule.condition.isBlank()) {

@@ -2,6 +2,7 @@ package io.hyperfoil.tools.horreum.entity.converter;
 
 import io.hyperfoil.tools.horreum.api.ApiUtil;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import jakarta.json.Json;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
@@ -16,10 +17,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @RegisterForReflection
-public class JsonUserType implements UserType {
+public class JsonUserType implements UserType<JsonNode> {
+
    @Override
-   public int[] sqlTypes() {
-      return new int[]{Types.JAVA_OBJECT};
+   public int getSqlType() {
+      return Types.JAVA_OBJECT;
    }
 
    @Override
@@ -28,7 +30,7 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public boolean equals(Object o1, Object o2) throws HibernateException {
+   public boolean equals(JsonNode o1, JsonNode o2) throws HibernateException {
       if (o1 == o2) {
          return true;
       } else if (o1 == null || o2 == null){
@@ -38,7 +40,7 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public int hashCode(Object o) throws HibernateException {
+   public int hashCode(JsonNode o) throws HibernateException {
       if(o == null){
          return 0;
       }
@@ -46,8 +48,8 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public Object nullSafeGet(ResultSet resultSet, String[] strings, SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws HibernateException, SQLException {
-      String content = resultSet.getString(strings[0]);
+   public JsonNode nullSafeGet(ResultSet resultSet, int i, SharedSessionContractImplementor sharedSessionContractImplementor, Object o) throws SQLException {
+      String content = (String) resultSet.getObject(i);
       if (content == null) {
          return null;
       }
@@ -59,7 +61,8 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public void nullSafeSet(PreparedStatement preparedStatement, Object o, int i, SharedSessionContractImplementor sharedSessionContractImplementor) throws HibernateException, SQLException {
+   public void nullSafeSet(PreparedStatement preparedStatement, JsonNode o, int i,
+                           SharedSessionContractImplementor sharedSessionContractImplementor) throws HibernateException, SQLException {
       if (o == null) {
          preparedStatement.setNull(i, Types.OTHER);
          return;
@@ -72,11 +75,11 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public Object deepCopy(Object o) throws HibernateException {
-      if (o instanceof JsonNode) {
-         return ((JsonNode) o).deepCopy();
-      }
-      return null;
+   public JsonNode deepCopy(JsonNode o) throws HibernateException {
+      if(o != null)
+         return o.deepCopy();
+      else
+         return null;
    }
 
    @Override
@@ -85,7 +88,7 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public Serializable disassemble(Object o) throws HibernateException {
+   public Serializable disassemble(JsonNode o) throws HibernateException {
       if(o == null){
          return null;
       }
@@ -93,7 +96,7 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public Object assemble(Serializable cached, Object owner) throws HibernateException {
+   public JsonNode assemble(Serializable cached, Object owner) throws HibernateException {
       if (cached instanceof String) {
          try {
             return ApiUtil.OBJECT_MAPPER.readTree((String) cached);
@@ -105,7 +108,7 @@ public class JsonUserType implements UserType {
    }
 
    @Override
-   public Object replace(Object original, Object target, Object owner) throws HibernateException {
+   public JsonNode replace(JsonNode original, JsonNode target, Object owner) throws HibernateException {
       return original;
    }
 }

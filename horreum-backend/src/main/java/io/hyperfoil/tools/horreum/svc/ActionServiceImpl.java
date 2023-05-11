@@ -26,15 +26,15 @@ import io.vertx.mutiny.core.Vertx;
 
 import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import javax.validation.constraints.NotNull;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.validation.constraints.NotNull;
 
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -192,7 +192,7 @@ public class ActionServiceImpl implements ActionService {
       return action;
    }
 
-   private JsonNode ensureNotNull(@NotNull JsonNode node) {
+   public JsonNode ensureNotNull(@NotNull JsonNode node) {
       return node == null || node.isNull() || node.isMissingNode() ? JsonNodeFactory.instance.objectNode() : node;
    }
 

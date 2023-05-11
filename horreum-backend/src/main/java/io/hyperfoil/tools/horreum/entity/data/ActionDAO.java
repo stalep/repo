@@ -3,12 +3,12 @@ package io.hyperfoil.tools.horreum.entity.data;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Parameter;
-import org.hibernate.annotations.Type;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.hibernate.type.SqlTypes;
 
 @Entity(name = "Action")
 @RegisterForReflection
@@ -42,12 +43,12 @@ public class ActionDAO extends PanacheEntityBase {
    public String type;
 
    @NotNull
-   @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
+   @JdbcTypeCode( SqlTypes.JSON )
    @Column(name = "config")
    public JsonNode config;
 
    @NotNull
-   @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
+   @JdbcTypeCode( SqlTypes.JSON )
    @Column(name = "secrets")
    @JsonIgnore
    public JsonNode secrets;

@@ -6,15 +6,15 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.security.PermitAll;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.PersistenceException;
-import javax.persistence.Query;
-import javax.transaction.Transactional;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.security.PermitAll;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.Query;
+import jakarta.transaction.Transactional;
 
 import io.hyperfoil.tools.horreum.api.data.DataSet;
 import io.hyperfoil.tools.horreum.api.data.Label;
@@ -23,9 +23,7 @@ import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.AliasToBeanResultTransformer;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.LongType;
-import org.hibernate.type.TextType;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -183,7 +181,8 @@ public class DatasetServiceImpl implements DatasetService {
       Query query = em.createNativeQuery(sql.toString())
             .setParameter(1, testId);
       if (jsonFilter != null) {
-         query.unwrap(NativeQuery.class).setParameter(2, jsonFilter, JsonNodeBinaryType.INSTANCE);
+         query.unwrap(NativeQuery.class).setParameter(2, jsonFilter, StandardBasicTypes.TEXT);
+         //query.unwrap(NativeQuery.class).setParameter(2, jsonFilter, JsonNodeBinaryType.INSTANCE);
       } else {
          query.setParameter(2, null);
       }
@@ -209,19 +208,22 @@ public class DatasetServiceImpl implements DatasetService {
    private void initTypes(Query query) {
       //noinspection deprecation
       query.unwrap(NativeQuery.class)
-            .addScalar("id", IntegerType.INSTANCE)
-            .addScalar("runId", IntegerType.INSTANCE)
-            .addScalar("ordinal", IntegerType.INSTANCE)
-            .addScalar("testId", IntegerType.INSTANCE)
-            .addScalar("testname", TextType.INSTANCE)
-            .addScalar("description", TextType.INSTANCE)
-            .addScalar("start", LongType.INSTANCE)
-            .addScalar("stop", LongType.INSTANCE)
-            .addScalar("owner", TextType.INSTANCE)
-            .addScalar("access", IntegerType.INSTANCE)
-            .addScalar("view", JsonNodeBinaryType.INSTANCE)
-            .addScalar("schemas", JsonNodeBinaryType.INSTANCE)
-            .addScalar("validationErrors", JsonNodeBinaryType.INSTANCE)
+            .addScalar("id", StandardBasicTypes.INTEGER)
+            .addScalar("runId", StandardBasicTypes.INTEGER)
+            .addScalar("ordinal", StandardBasicTypes.INTEGER)
+            .addScalar("testId", StandardBasicTypes.INTEGER)
+            .addScalar("testname", StandardBasicTypes.TEXT)
+            .addScalar("description", StandardBasicTypes.TEXT)
+            .addScalar("start", StandardBasicTypes.LONG)
+            .addScalar("stop", StandardBasicTypes.LONG)
+            .addScalar("owner", StandardBasicTypes.TEXT)
+            .addScalar("access", StandardBasicTypes.INTEGER)
+            .addScalar("view", StandardBasicTypes.TEXT)
+            .addScalar("schemas", StandardBasicTypes.TEXT)
+            .addScalar("validationErrors", StandardBasicTypes.TEXT)
+              //.addScalar("view", JsonNodeBinaryType.INSTANCE)
+              //.addScalar("schemas", JsonNodeBinaryType.INSTANCE)
+              //.addScalar("validationErrors", JsonNodeBinaryType.INSTANCE)
             .setResultTransformer(DATASET_SUMMARY_TRANSFORMER);
    }
 
@@ -295,12 +297,13 @@ public class DatasetServiceImpl implements DatasetService {
       Stream<Object[]> stream = em.createNativeQuery("SELECT label_id, label.name AS label_name, schema.id AS schema_id, schema.name AS schema_name, schema.uri, value FROM label_values " +
             "JOIN label ON label.id = label_id JOIN schema ON label.schema_id = schema.id WHERE dataset_id = ?1")
             .setParameter(1, datasetId).unwrap(NativeQuery.class)
-            .addScalar("label_id", IntegerType.INSTANCE)
-            .addScalar("label_name", TextType.INSTANCE)
-            .addScalar("schema_id", IntegerType.INSTANCE)
-            .addScalar("schema_name", TextType.INSTANCE)
-            .addScalar("uri", TextType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE)
+            .addScalar("label_id", StandardBasicTypes.INTEGER)
+            .addScalar("label_name", StandardBasicTypes.TEXT)
+            .addScalar("schema_id", StandardBasicTypes.INTEGER)
+            .addScalar("schema_name", StandardBasicTypes.TEXT)
+            .addScalar("uri", StandardBasicTypes.TEXT)
+            .addScalar("value", StandardBasicTypes.TEXT)
+              //.addScalar("value", JsonNodeBinaryType.INSTANCE)
             .getResultStream();
       return stream.map(row -> {
                LabelValue value = new LabelValue();
@@ -336,7 +339,8 @@ public class DatasetServiceImpl implements DatasetService {
                .setParameter(1, extractors)
                .setParameter(2, datasetId)
                .setParameter(3, label.schemaId)
-               .addScalar("value", JsonNodeBinaryType.INSTANCE).getSingleResult();
+               .addScalar("value", StandardBasicTypes.TEXT).getSingleResult();
+               //.addScalar("value", JsonNodeBinaryType.INSTANCE).getSingleResult();
       } catch (PersistenceException e) {
          preview.output = Util.explainCauses(e);
          return preview;
@@ -407,10 +411,11 @@ public class DatasetServiceImpl implements DatasetService {
                      .setParameter(1, datasetId)
                      .setParameter(2, queryLabelId)
                      .unwrap(NativeQuery.class)
-                     .addScalar("label_id", IntegerType.INSTANCE)
-                     .addScalar("name", TextType.INSTANCE)
-                     .addScalar("function", TextType.INSTANCE)
-                     .addScalar("value", JsonNodeBinaryType.INSTANCE)
+                     .addScalar("label_id", StandardBasicTypes.INTEGER)
+                     .addScalar("name", StandardBasicTypes.TEXT)
+                     .addScalar("function", StandardBasicTypes.TEXT)
+                     .addScalar("value", StandardBasicTypes.TEXT)
+                 //.addScalar("value", JsonNodeBinaryType.INSTANCE)
                      .getResultList();
       } catch (PersistenceException e) {
          logMessageInNewTx(datasetId, PersistentLog.ERROR, "Failed to extract data (JSONPath expression error?): " + Util.explainCauses(e));

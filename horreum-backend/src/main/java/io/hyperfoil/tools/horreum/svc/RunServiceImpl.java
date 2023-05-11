@@ -18,24 +18,24 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceException;
-import javax.persistence.Query;
-import javax.persistence.TransactionRequiredException;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.Transactional;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TransactionRequiredException;
+import jakarta.transaction.InvalidTransactionException;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -66,10 +66,7 @@ import io.vertx.core.Vertx;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.query.NativeQuery;
-import org.hibernate.type.BooleanType;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.TextType;
-import org.hibernate.type.TimestampType;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
@@ -140,7 +137,7 @@ public class RunServiceImpl implements RunService {
       log.debugf("Trashing runs for test %s (%d)", test.name, test.id);
       ScrollableResults results = Util.scroll(em.createNativeQuery("SELECT id FROM run WHERE testid = ?1").setParameter(1, test.id));
       while (results.next()) {
-         int id = (int) results.get(0);
+         int id = (int) results.get();
          messageBus.executeForTest(test.id, () -> trashDueToTestDeleted(id));
       }
    }
@@ -182,9 +179,20 @@ public class RunServiceImpl implements RunService {
    }
 
    void findRunsWithUri(String uri, BiConsumer<Integer, Integer> consumer) {
-      ScrollableResults results = Util.scroll(em.createNativeQuery(FIND_RUNS_WITH_URI).setParameter(1, uri));
+      ScrollableResults<RunFromUri> results =
+             em.createNativeQuery(FIND_RUNS_WITH_URI).setParameter(1, uri)
+                     .unwrap(NativeQuery.class)
+                     .setTupleTransformer((tuple, aliases) -> {
+                        RunFromUri r = new RunFromUri();
+                        r.id = (int) tuple[0];
+                        r.testId = (int) tuple[1];
+                        return r;
+                     })
+                     .unwrap(NativeQuery.class).setReadOnly(true).setFetchSize(100)
+                     .scroll(ScrollMode.FORWARD_ONLY);
       while (results.next()) {
-         consumer.accept((Integer) results.get(0), (Integer) results.get(1));
+         RunFromUri r = results.get();
+         consumer.accept( r.id, r.testId);
       }
    }
 
@@ -681,20 +689,23 @@ public class RunServiceImpl implements RunService {
 
    private void initTypes(Query query) {
       query.unwrap(NativeQuery.class)
-            .addScalar("id", IntegerType.INSTANCE)
-            .addScalar("start", TimestampType.INSTANCE)
-            .addScalar("stop", TimestampType.INSTANCE)
-            .addScalar("testid", IntegerType.INSTANCE)
-            .addScalar("owner", TextType.INSTANCE)
-            .addScalar("access", IntegerType.INSTANCE)
-            .addScalar("token", TextType.INSTANCE)
-            .addScalar("trashed", BooleanType.INSTANCE)
-            .addScalar("description", TextType.INSTANCE)
-            .addScalar("has_metadata", BooleanType.INSTANCE)
-            .addScalar("testname", TextType.INSTANCE)
-            .addScalar("schemas", JsonNodeBinaryType.INSTANCE)
-            .addScalar("datasets", JsonNodeBinaryType.INSTANCE)
-            .addScalar("validationErrors", JsonNodeBinaryType.INSTANCE);
+            .addScalar("id", StandardBasicTypes.INTEGER)
+            .addScalar("start", StandardBasicTypes.TIMESTAMP)
+            .addScalar("stop", StandardBasicTypes.TIMESTAMP)
+            .addScalar("testid", StandardBasicTypes.INTEGER)
+            .addScalar("owner", StandardBasicTypes.TEXT)
+            .addScalar("access", StandardBasicTypes.INTEGER)
+            .addScalar("token", StandardBasicTypes.TEXT)
+            .addScalar("trashed", StandardBasicTypes.BOOLEAN)
+            .addScalar("description", StandardBasicTypes.TEXT)
+            .addScalar("has_metadata", StandardBasicTypes.BOOLEAN)
+            .addScalar("testname", StandardBasicTypes.TEXT)
+            //  .addScalar("schemas", JsonNodeBinaryType.INSTANCE)
+            //  .addScalar("datasets", JsonNodeBinaryType.INSTANCE)
+            //  .addScalar("validationErrors", JsonNodeBinaryType.INSTANCE);
+            .addScalar("schemas", StandardBasicTypes.TEXT)
+            .addScalar("datasets", StandardBasicTypes.TEXT)
+            .addScalar("validationErrors", StandardBasicTypes.TEXT);
    }
 
    private RunSummary createSummary(Object[] row) {
@@ -914,16 +925,22 @@ public class RunServiceImpl implements RunService {
          log.debugf("Deleted %d datasets for trashed runs between %s and %s", deleted, from, to);
       }
 
-      ScrollableResults results = em.createNativeQuery("SELECT id, testid FROM run WHERE start BETWEEN ?1 AND ?2 AND NOT trashed ORDER BY start")
+      ScrollableResults<Recalculate> results = em.createNativeQuery("SELECT id, testid FROM run WHERE start BETWEEN ?1 AND ?2 AND NOT trashed ORDER BY start")
             .setParameter(1, from).setParameter(2, to)
-            .unwrap(NativeQuery.class).setReadOnly(true).setFetchSize(100)
+            .unwrap(NativeQuery.class)
+              .setTupleTransformer((tuples, aliases) -> {
+                 Recalculate r = new Recalculate();
+                 r.runId = (int) tuples[0];
+                 r.testId = (int) tuples[1];
+                 return r;
+              })
+              .setReadOnly(true).setFetchSize(100)
             .scroll(ScrollMode.FORWARD_ONLY);
       while (results.next()) {
-         int runId = (int) results.get(0);
-         int testId = (int) results.get(1);
-         log.debugf("Recalculate DataSets for run %d - forcing recalculation of all between %s and %s", runId, from, to);
+         Recalculate r = results.get();
+         log.debugf("Recalculate DataSets for run %d - forcing recalculation of all between %s and %s", r.runId, from, to);
          // transform will add proper roles anyway
-         messageBus.executeForTest(testId, () -> datasetService.withRecalculationLock(() -> transform(runId, true)));
+         messageBus.executeForTest(r.testId, () -> datasetService.withRecalculationLock(() -> transform(r.runId, true)));
       }
    }
 
@@ -968,11 +985,11 @@ public class RunServiceImpl implements RunService {
       List<Object[]> relevantSchemas = unchecked(em.createNamedQuery(QUERY_TRANSFORMER_TARGETS)
             .setParameter(1, run.id)
             .unwrap(NativeQuery.class)
-            .addScalar("type", IntegerType.INSTANCE)
-            .addScalar("key", TextType.INSTANCE)
-            .addScalar("transformer_id", IntegerType.INSTANCE)
-            .addScalar("uri", TextType.INSTANCE)
-            .addScalar("source", IntegerType.INSTANCE)
+            .addScalar("type", StandardBasicTypes.INTEGER)
+            .addScalar("key", StandardBasicTypes.TEXT)
+            .addScalar("transformer_id", StandardBasicTypes.INTEGER)
+            .addScalar("uri", StandardBasicTypes.TEXT)
+            .addScalar("source", StandardBasicTypes.INTEGER)
             .getResultList() );
 
       int schemasAndTransformers = relevantSchemas.size();
@@ -1003,8 +1020,9 @@ public class RunServiceImpl implements RunService {
                      extractedData = unchecked(em.createNamedQuery(QUERY_1ST_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID)
                            .setParameter(1, run.id).setParameter(2, transformerId)
                            .unwrap(NativeQuery.class)
-                           .addScalar("name", TextType.INSTANCE)
-                           .addScalar("value", JsonNodeBinaryType.INSTANCE)
+                           .addScalar("name", StandardBasicTypes.TEXT)
+                           .addScalar("value", StandardBasicTypes.TEXT)
+                             //.addScalar("value", JsonNodeBinaryType.INSTANCE)
                            .getResultList());
                   } else {
                      extractedData = unchecked(em.createNamedQuery(QUERY_2ND_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID)
@@ -1012,8 +1030,9 @@ public class RunServiceImpl implements RunService {
                            .setParameter(3, type == SchemaDAO.TYPE_2ND_LEVEL ? key : Integer.parseInt(key))
                            .setParameter(4, source)
                            .unwrap(NativeQuery.class)
-                           .addScalar("name", TextType.INSTANCE)
-                           .addScalar("value", JsonNodeBinaryType.INSTANCE)
+                           .addScalar("name", StandardBasicTypes.TEXT)
+                           .addScalar("value", StandardBasicTypes.TEXT)
+                             //.addScalar("value", JsonNodeBinaryType.INSTANCE)
                            .getResultList());
                   }
                } catch (PersistenceException e) {
@@ -1212,5 +1231,15 @@ public class RunServiceImpl implements RunService {
             logMessage(run, PersistentLog.DEBUG, "<code>$schema</code> present (%s), not overriding with %s", node.path("$schema").asText(), uri);
          }
       }
+   }
+
+   class Recalculate {
+      private int runId;
+      private int testId;
+   }
+
+   class RunFromUri {
+      private int id;
+      private int testId;
    }
 }

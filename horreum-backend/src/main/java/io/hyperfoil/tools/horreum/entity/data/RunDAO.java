@@ -6,25 +6,26 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
 
-import javax.persistence.CascadeType;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.SequenceGenerator;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.Collection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.hibernate.type.SqlTypes;
 
 @Entity(name = "run")
 @RegisterForReflection
@@ -59,10 +60,10 @@ public class RunDAO extends ProtectedBaseEntity {
    public Integer testid;
 
    @NotNull
-   @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
+   @JdbcTypeCode( SqlTypes.JSON )
    public JsonNode data;
 
-   @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
+   @JdbcTypeCode( SqlTypes.JSON )
    public JsonNode metadata;
 
    @NotNull

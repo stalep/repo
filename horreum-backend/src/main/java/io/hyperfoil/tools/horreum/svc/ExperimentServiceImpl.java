@@ -10,14 +10,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import javax.transaction.Transactional;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import jakarta.transaction.Transactional;
 
 import io.hyperfoil.tools.horreum.api.data.DataSet;
 import io.hyperfoil.tools.horreum.api.data.ExperimentComparison;
@@ -30,8 +30,7 @@ import io.hyperfoil.tools.horreum.mapper.ExperimentProfileMapper;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.Transformers;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.TextType;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -170,9 +169,10 @@ public class ExperimentServiceImpl implements ExperimentService {
       @SuppressWarnings("unchecked")
       List<Object[]> selectorRows = selectorQuery.setParameter(1, info.testId).setParameter(2, info.id)
             .unwrap(NativeQuery.class)
-            .addScalar("profile_id", IntegerType.INSTANCE)
-            .addScalar("selector_filter", TextType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE)
+            .addScalar("profile_id", StandardBasicTypes.INTEGER)
+            .addScalar("selector_filter", StandardBasicTypes.TEXT)
+            .addScalar("value", StandardBasicTypes.TEXT)
+              //.addScalar("value", JsonNodeBinaryType.INSTANCE)
             .getResultList();
 
       List<Integer> matchingProfile = new ArrayList<>();
@@ -208,10 +208,11 @@ public class ExperimentServiceImpl implements ExperimentService {
       @SuppressWarnings("unchecked")
       List<Object[]> baselineRows = baselineQuery.setParameter(1, matchingProfile).setParameter(2, info.testId)
             .unwrap(NativeQuery.class)
-            .addScalar("profile_id", IntegerType.INSTANCE)
-            .addScalar("baseline_filter", TextType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE)
-            .addScalar("dataset_id", IntegerType.INSTANCE)
+            .addScalar("profile_id", StandardBasicTypes.INTEGER)
+            .addScalar("baseline_filter", StandardBasicTypes.TEXT)
+            .addScalar("value", StandardBasicTypes.TEXT)
+              //.addScalar("value", JsonNodeBinaryType.INSTANCE)
+            .addScalar("dataset_id", StandardBasicTypes.INTEGER)
             .getResultList();
 
       Map<Integer, List<Integer>> baselines = new HashMap<>();
@@ -275,7 +276,8 @@ public class ExperimentServiceImpl implements ExperimentService {
                "LEFT JOIN label_values lv ON label.id = lv.label_id WHERE ep.id = ?1 AND lv.dataset_id = ?2")
                .setParameter(1, profile.id).setParameter(2, info.id)
                .unwrap(NativeQuery.class)
-               .addScalar("value", JsonNodeBinaryType.INSTANCE)
+               .addScalar("value", StandardBasicTypes.TEXT)
+                 //.addScalar("value", JsonNodeBinaryType.INSTANCE)
                .getSingleResult();
          Hibernate.initialize(profile.test.name);
          resultConsumer.accept(new ExperimentResult(ExperimentProfileMapper.from(profile),

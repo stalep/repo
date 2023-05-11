@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.horreum.entity.data;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 

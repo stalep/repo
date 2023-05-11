@@ -14,14 +14,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import javax.transaction.Transactional;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import jakarta.transaction.Transactional;
 
 import io.hyperfoil.tools.horreum.api.report.ReportComment;
 import io.hyperfoil.tools.horreum.api.report.TableReportConfig;
@@ -34,8 +34,7 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
-import org.hibernate.type.IntegerType;
-import org.hibernate.type.TextType;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -111,12 +110,13 @@ public class ReportServiceImpl implements ReportService {
       Util.addPaging(queryBuilder, limit, page, sort, direction.name());
 
       Query query = em.createNativeQuery(queryBuilder.toString()).unwrap(NativeQuery.class)
-            .addScalar("config_id", IntegerType.INSTANCE)
-            .addScalar("title", TextType.INSTANCE)
-            .addScalar("testname", TextType.INSTANCE)
-            .addScalar("testid", IntegerType.INSTANCE)
-            .addScalar("reports", JsonNodeBinaryType.INSTANCE)
-            .addScalar("total", IntegerType.INSTANCE);
+            .addScalar("config_id", StandardBasicTypes.INTEGER)
+            .addScalar("title", StandardBasicTypes.TEXT)
+            .addScalar("testname", StandardBasicTypes.TEXT)
+            .addScalar("testid", StandardBasicTypes.INTEGER)
+            .addScalar("reports", StandardBasicTypes.TEXT)
+              //.addScalar("reports", JsonNodeBinaryType.INSTANCE)
+            .addScalar("total", StandardBasicTypes.INTEGER);
       for (var entry : params.entrySet()) {
          query.setParameter(entry.getKey(), entry.getValue());
       }
@@ -564,11 +564,13 @@ public class ReportServiceImpl implements ReportService {
       Query query = em.createNativeQuery(sql.toString())
             .setParameter("testid", testId)
             .unwrap(NativeQuery.class)
-            .setParameter("labels", labels, JsonNodeBinaryType.INSTANCE)
-            .addScalar("id", IntegerType.INSTANCE)
-            .addScalar("runid", IntegerType.INSTANCE)
-            .addScalar("ordinal", IntegerType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE);
+            .setParameter("labels", labels, StandardBasicTypes.TEXT)
+              //.setParameter("labels", labels, JsonNodeBinaryType.INSTANCE)
+            .addScalar("id", StandardBasicTypes.INTEGER)
+            .addScalar("runid", StandardBasicTypes.INTEGER)
+            .addScalar("ordinal", StandardBasicTypes.INTEGER)
+            .addScalar("value", StandardBasicTypes.TEXT);
+            //.addScalar("value", JsonNodeBinaryType.INSTANCE);
       //noinspection unchecked
       return query.getResultList();
    }
@@ -590,11 +592,13 @@ public class ReportServiceImpl implements ReportService {
       Query query = em.createNativeQuery(sql.toString())
             .setParameter("datasets", datasets)
             .unwrap(NativeQuery.class)
-            .setParameter("labels", labels, JsonNodeBinaryType.INSTANCE)
-            .addScalar("id", IntegerType.INSTANCE)
-            .addScalar("runid", IntegerType.INSTANCE)
-            .addScalar("ordinal", IntegerType.INSTANCE)
-            .addScalar("value", JsonNodeBinaryType.INSTANCE);
+            .setParameter("labels", labels, StandardBasicTypes.TEXT)
+              //.setParameter("labels", labels, JsonNodeBinaryType.INSTANCE)
+            .addScalar("id", StandardBasicTypes.INTEGER)
+            .addScalar("runid", StandardBasicTypes.INTEGER)
+            .addScalar("ordinal", StandardBasicTypes.INTEGER)
+            .addScalar("value", StandardBasicTypes.TEXT);
+      //.addScalar("value", JsonNodeBinaryType.INSTANCE);
       //noinspection unchecked
       return (List<Object[]>) query.getResultList();
    }

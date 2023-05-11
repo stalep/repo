@@ -2,22 +2,22 @@ package io.hyperfoil.tools.horreum.entity.alerting;
 
 import java.util.Set;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.validation.constraints.NotNull;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.NotNull;
 
 import io.hyperfoil.tools.horreum.entity.data.LabelDAO;
 import io.hyperfoil.tools.horreum.entity.data.RunDAO;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Parameter;
-import org.hibernate.annotations.Type;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Variable emits a single value from the {@link RunDAO#data}
@@ -41,7 +42,6 @@ public class VariableDAO extends PanacheEntityBase {
          name = "variableIdGenerator",
          strategy = "io.hyperfoil.tools.horreum.entity.SeqIdGenerator",
          parameters = {
-               @Parameter(name = SequenceStyleGenerator.SEQUENCE_PARAM, value = SequenceStyleGenerator.DEF_SEQUENCE_NAME),
                @Parameter(name = SequenceStyleGenerator.INCREMENT_PARAM, value = "1"),
          }
    )
@@ -62,7 +62,7 @@ public class VariableDAO extends PanacheEntityBase {
    public int order;
 
    @NotNull
-   @Type(type = "io.hyperfoil.tools.horreum.entity.converter.JsonUserType")
+   @JdbcTypeCode( SqlTypes.JSON )
    public JsonNode labels;
 
    @JsonInclude(Include.NON_NULL)

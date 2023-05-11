@@ -17,15 +17,15 @@ import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.security.identity.SecurityIdentity;
 
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceException;
-import javax.persistence.Query;
-import javax.transaction.Transactional;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.Query;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 import java.security.GeneralSecurityException;
 import java.time.Instant;
@@ -46,6 +46,7 @@ import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.Transformers;
+import org.hibernate.type.StandardBasicTypes;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -500,7 +501,8 @@ public class TestServiceImpl implements TestService {
             "SELECT DISTINCT fingerprint FROM fingerprint fp " +
             "JOIN dataset ON dataset.id = dataset_id WHERE dataset.testid = ?1")
             .setParameter(1, testId)
-            .unwrap(NativeQuery.class).addScalar("fingerprint", JsonNodeBinaryType.INSTANCE)
+            .unwrap(NativeQuery.class).addScalar("fingerprint", StandardBasicTypes.TEXT)
+              //.unwrap(NativeQuery.class).addScalar("fingerprint", JsonNodeBinaryType.INSTANCE)
             .getResultList();
    }
 
@@ -511,7 +513,8 @@ public class TestServiceImpl implements TestService {
       return em.createNativeQuery(LABEL_VALUES_QUERY)
             .setParameter(1, testId).setParameter(2, filtering).setParameter(3, metrics)
             .unwrap(NativeQuery.class)
-            .addScalar("values", JsonNodeBinaryType.INSTANCE)
+            .addScalar("values", StandardBasicTypes.TEXT)
+              //.addScalar("values", JsonNodeBinaryType.INSTANCE)
             .getResultList();
    }
 
@@ -562,7 +565,7 @@ public class TestServiceImpl implements TestService {
             .unwrap(NativeQuery.class).setReadOnly(true).setFetchSize(100)
             .scroll(ScrollMode.FORWARD_ONLY);
       while (results.next()) {
-         int runId = (int) results.get(0);
+         int runId = (int) results.get();
          log.debugf("Recalculate DataSets for run %d - forcing recalculation for test %d (%s)", runId, testId, test.name);
          // transform will add proper roles anyway
          messageBus.executeForTest(testId, () -> datasetService.withRecalculationLock(() -> {
