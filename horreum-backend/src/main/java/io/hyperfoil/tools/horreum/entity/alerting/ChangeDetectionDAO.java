@@ -29,13 +29,13 @@ public class ChangeDetectionDAO extends PanacheEntityBase {
    @JsonProperty(required = true)
    @Id
    @GenericGenerator(
-         name = "cdIdGenerator",
+         name = "changeDetectionIdGenerator",
          strategy = "io.hyperfoil.tools.horreum.entity.SeqIdGenerator",
          parameters = {
                @Parameter(name = SequenceStyleGenerator.INCREMENT_PARAM, value = "1"),
          }
    )
-   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cdIdGenerator")
+   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "changeDetectionIdGenerator")
    public Integer id;
 
    @NotNull
