@@ -42,13 +42,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.hibernate.Hibernate;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.Transformers;
-import org.hibernate.type.CustomType;
-import org.hibernate.type.spi.TypeConfiguration;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -101,6 +101,14 @@ public class TestServiceImpl implements TestService {
    @Inject
    EncryptionManager encryptionManager;
 
+   @Inject
+   @Channel("new-test-out")
+   Emitter<Test> newTestEmitter;
+
+   @Inject
+   @Channel("delete-test-out")
+   Emitter<Test> deleteTestEmitter;
+
    private final ConcurrentHashMap<Integer, RecalculationStatus> recalculations = new ConcurrentHashMap<>();
 
    @RolesAllowed(Roles.TESTER)
@@ -116,7 +124,8 @@ public class TestServiceImpl implements TestService {
       }
       log.debugf("Deleting test %s (%d)", test.name, test.id);
       test.delete();
-      messageBus.publish(TestDAO.EVENT_DELETED, test.id, test);
+      //messageBus.publish(TestDAO.EVENT_DELETED, test.id, test);
+      deleteTestEmitter.send(TestMapper.from(test));
    }
 
    @Override
@@ -229,7 +238,8 @@ public class TestServiceImpl implements TestService {
                throw new WebApplicationException(e, Response.serverError().build());
             }
          }
-         messageBus.publish(TestDAO.EVENT_NEW, test.id, test);
+         //messageBus.publish(TestDAO.EVENT_NEW, test.id, test);
+         newTestEmitter.send(TestMapper.from(test));
       }
    }
 

@@ -10,15 +10,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hyperfoil.tools.horreum.api.data.Test;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import io.hyperfoil.tools.horreum.api.alerting.Watch;
 import io.hyperfoil.tools.horreum.mapper.WatchMapper;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -46,10 +49,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
    @Inject
    MessageBus messageBus;
 
+   /*
    @PostConstruct
    void init() {
       messageBus.subscribe(TestDAO.EVENT_DELETED, "SubscriptionService", TestDAO.class, this::onTestDelete);
    }
+    */
 
    private static Set<String> merge(Set<String> set, String item) {
       if (set == null) {
@@ -248,7 +253,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDelete(TestDAO test) {
+   @Incoming("delete-test-in")
+   @ActivateRequestContext
+   public void onTestDelete(Test test) {
       var subscriptions = WatchDAO.list("test.id = ?1", test.id);
       log.infof("Deleting %d subscriptions for test %s (%d)", subscriptions.size(), test.name, test.id);
       for (var subscription : subscriptions) {

@@ -14,11 +14,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -30,6 +32,7 @@ import io.hyperfoil.tools.horreum.api.report.TableReport;
 import io.hyperfoil.tools.horreum.entity.report.*;
 import io.hyperfoil.tools.horreum.mapper.ReportCommentMapper;
 import io.hyperfoil.tools.horreum.mapper.TableReportMapper;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
@@ -75,10 +78,12 @@ public class ReportServiceImpl implements ReportService {
    @Inject
    TimeService timeService;
 
+   /*
    @PostConstruct
    void init() {
       messageBus.subscribe(TestDAO.EVENT_DELETED, "ReportService", TestDAO.class, this::onTestDelete);
    }
+    */
 
    @PermitAll
    @WithRoles
@@ -719,7 +724,9 @@ public class ReportServiceImpl implements ReportService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDelete(TestDAO test) {
+   @Incoming("delete-test-in")
+   @ActivateRequestContext
+   public void onTestDelete(Test test) {
       int changedRows = em.createNativeQuery("UPDATE tablereportconfig SET testid = NULL WHERE testid = ?")
             .setParameter(1, test.id).executeUpdate();
       log.infof("Disowned %d report configs as test %s(%d) was deleted.", changedRows, test.name, test.id);

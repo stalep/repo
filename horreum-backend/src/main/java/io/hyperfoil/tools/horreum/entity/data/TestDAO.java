@@ -34,7 +34,6 @@ import org.hibernate.type.SqlTypes;
 @JsonIgnoreType
 public class TestDAO extends PanacheEntityBase {
    public static final String EVENT_NEW = "test/new";
-   public static final String EVENT_DELETED = "test/deleted";
 
    @Id
    @GenericGenerator(

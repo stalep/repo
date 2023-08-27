@@ -5,6 +5,7 @@ import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -16,6 +17,7 @@ import io.hyperfoil.tools.horreum.events.DatasetChanges;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.quarkus.runtime.Startup;
 import io.vertx.core.Vertx;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 @Startup
 @ApplicationScoped
@@ -30,13 +32,17 @@ public class EventAggregator {
 
    private long timerId = -1;
 
+   /*
    @PostConstruct
    void init() {
       messageBus.subscribe(Change.EVENT_NEW, "EventAggregator", Change.Event.class, this::onNewChange);
    }
+    */
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
+   @Incoming("new-change-in")
+   @ActivateRequestContext
    public synchronized void onNewChange(Change.Event event) {
       datasetChanges.computeIfAbsent(event.dataset.id, id -> {
          String fingerprint = DataSetDAO.getEntityManager().getReference(DataSetDAO.class, event.dataset.id).getFingerprint();

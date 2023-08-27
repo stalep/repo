@@ -140,6 +140,10 @@
             <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.quinoa</groupId>
             <artifactId>quarkus-quinoa</artifactId>
             <version>${quinoa.version}</version>

@@ -22,12 +22,16 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.hyperfoil.tools.horreum.api.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
+import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
 import io.hypersistence.utils.hibernate.query.MapResultTransformer;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
@@ -70,6 +74,9 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.core.Vertx;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.query.NativeQuery;
@@ -134,16 +141,26 @@ public class RunServiceImpl implements RunService {
    @Inject
    ObjectMapper mapper;
 
+   @Inject
+   @Channel("new-run-out")
+   Emitter<Run> newRunEmitter;
+
+   @Inject
+   @Channel("new-run-out")
+   Emitter<DataSet.Info> deleteDataSetEmitter;
+
    @PostConstruct
    void init() {
       sqlService.registerListener("calculate_datasets", this::onCalculateDataSets);
       sqlService.registerListener("new_or_updated_schema", this::onNewOrUpdatedSchema);
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "RunService", TestDAO.class, this::onTestDeleted);
+      //messageBus.subscribe(TestDAO.EVENT_DELETED, "RunService", TestDAO.class, this::onTestDeleted);
    }
 
    @Transactional
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
-   void onTestDeleted(TestDAO test) {
+   @Incoming("delete-test-in")
+   @ActivateRequestContext
+   void onTestDeleted(Test test) {
       log.debugf("Trashing runs for test %s (%d)", test.name, test.id);
       ScrollableResults results = Util.scroll(em.createNativeQuery("SELECT id FROM run WHERE testid = ?1").setParameter(1, test.id));
       while (results.next()) {
@@ -582,7 +599,8 @@ public class RunServiceImpl implements RunService {
          throw ServiceException.serverError("Failed to persist run");
       }
       log.debugf("Upload flushed, run ID %d", run.id);
-      messageBus.publish(RunDAO.EVENT_NEW, test.id, run);
+      //messageBus.publish(RunDAO.EVENT_NEW, test.id, run);
+      newRunEmitter.send(RunMapper.from(run));
 
       return run.id;
    }
@@ -880,7 +898,8 @@ public class RunServiceImpl implements RunService {
          List<DataSetDAO> datasets = DataSetDAO.list("run.id", id);
          log.debugf("Trashing run %d (test %d, %d datasets)", (long)run.id, (long)run.testid, datasets.size());
          for (var dataset : datasets) {
-            messageBus.publish(DataSetDAO.EVENT_DELETED, run.testid, dataset.getInfo());
+            //messageBus.publish(DataSetDAO.EVENT_DELETED, run.testid, dataset.getInfo());
+            deleteDataSetEmitter.send(DataSetMapper.fromInfo(dataset.getInfo()));
             dataset.delete();
          }
          messageBus.publish(RunDAO.EVENT_TRASHED, run.testid, id);
@@ -1023,7 +1042,8 @@ public class RunServiceImpl implements RunService {
       // We need to make sure all old datasets are gone before creating new; otherwise we could
       // break the runid,ordinal uniqueness constraint
       for (DataSetDAO old : DataSetDAO.<DataSetDAO>list("run.id", runId)) {
-         messageBus.publish(DataSetDAO.EVENT_DELETED, old.testid, old.getInfo());
+         //messageBus.publish(DataSetDAO.EVENT_DELETED, old.testid, old.getInfo());
+         deleteDataSetEmitter.send(DataSetMapper.fromInfo(old.getInfo()));
          old.delete();
       }
 

@@ -2,6 +2,8 @@ package io.hyperfoil.tools.horreum.svc;
 
 import io.hyperfoil.tools.horreum.api.data.Action;
 import io.hyperfoil.tools.horreum.api.data.AllowedSite;
+import io.hyperfoil.tools.horreum.api.data.Run;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.entity.alerting.ChangeDAO;
 import io.hyperfoil.tools.horreum.api.alerting.Change;
 import io.hyperfoil.tools.horreum.entity.data.*;
@@ -14,6 +16,7 @@ import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.ActionLogDAO;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
 import io.hyperfoil.tools.horreum.action.ActionPlugin;
+import io.hyperfoil.tools.horreum.mapper.TestMapper;
 import io.hyperfoil.tools.horreum.server.EncryptionManager;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 
@@ -21,9 +24,12 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.runtime.Startup;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
 import jakarta.annotation.PostConstruct;
@@ -72,11 +78,11 @@ public class ActionServiceImpl implements ActionService {
    @PostConstruct()
    public void postConstruct(){
       plugins = actionPlugins.stream().collect(Collectors.toMap(ActionPlugin::type, Function.identity()));
-      messageBus.subscribe(TestDAO.EVENT_NEW, "ActionService", TestDAO.class, this::onNewTest);
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "ActionService", TestDAO.class, this::onTestDelete);
-      messageBus.subscribe(RunDAO.EVENT_NEW, "ActionService", RunDAO.class, this::onNewRun);
-      messageBus.subscribe(Change.EVENT_NEW, "ActionService", Change.Event.class, this::onNewChange);
-      messageBus.subscribe(ExperimentService.ExperimentResult.NEW_RESULT, "ActionService", ExperimentService.ExperimentResult.class, this::onNewExperimentResult);
+      //messageBus.subscribe(TestDAO.EVENT_NEW, "ActionService", TestDAO.class, this::onNewTest);
+      //messageBus.subscribe(TestDAO.EVENT_DELETED, "ActionService", TestDAO.class, this::onTestDelete);
+      //messageBus.subscribe(RunDAO.EVENT_NEW, "ActionService", RunDAO.class, this::onNewRun);
+      //messageBus.subscribe(Change.EVENT_NEW, "ActionService", Change.Event.class, this::onNewChange);
+      //messageBus.subscribe(ExperimentService.ExperimentResult.NEW_RESULT, "ActionService", ExperimentService.ExperimentResult.class, this::onNewExperimentResult);
    }
 
    private void executeActions(String event, int testId, Object payload, boolean notify){
@@ -130,25 +136,33 @@ public class ActionServiceImpl implements ActionService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onNewTest(TestDAO test) {
-      executeActions(TestDAO.EVENT_NEW, -1, test, true);
+   @Incoming("new-test-in")
+   @ActivateRequestContext
+   public void onNewTest(Test test) {
+      executeActions(TestDAO.EVENT_NEW, -1, TestMapper.to(test), true);
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDelete(TestDAO test) {
+   @Incoming("delete-test-in")
+   @ActivateRequestContext
+   public void onTestDelete(Test test) {
       ActionDAO.delete("testId", test.id);
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onNewRun(RunDAO run) {
+   @Incoming("new-run-in")
+   @ActivateRequestContext
+   public void onNewRun(Run run) {
       Integer testId = run.testid;
       executeActions(RunDAO.EVENT_NEW, testId, run, true);
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
+   @Incoming("new-change-in")
+   @ActivateRequestContext
    public void onNewChange(Change.Event changeEvent) {
       int testId = em.createQuery("SELECT testid FROM run WHERE id = ?1", Integer.class)
             .setParameter(1, changeEvent.dataset.runId).getResultStream().findFirst().orElse(-1);
@@ -284,6 +298,8 @@ public class ActionServiceImpl implements ActionService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
+   @Incoming("new-experimentresult-in")
+   @ActivateRequestContext
    public void onNewExperimentResult(ExperimentService.ExperimentResult result) {
       executeActions(ExperimentService.ExperimentResult.NEW_RESULT, result.profile.testId, result, result.notify);
    }

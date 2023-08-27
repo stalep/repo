@@ -26,12 +26,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import io.hyperfoil.tools.horreum.api.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.Run;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.hibernate.IntArrayType;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -60,6 +64,9 @@ import io.hyperfoil.tools.horreum.entity.data.RunDAO;
 import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.hyperfoil.tools.horreum.mapper.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.AliasToBeanResultTransformer;
@@ -185,6 +192,17 @@ public class AlertingServiceImpl implements AlertingService {
    @Inject
    TimeService timeService;
 
+   @Inject
+   @Channel("new-change-out")
+   Emitter<Change.Event> newChangeEmitter;
+   @Inject
+   @Channel("new-datapoint-out")
+   Emitter<DataPoint.Event> newDataPointEmitter;
+
+   @Inject
+   @Channel("delete-datapoint-out")
+   Emitter<DataPoint.Event> deleteDataPointEmitter;
+
    static ConcurrentHashMap<Integer, AtomicInteger> retryCounterSet = new ConcurrentHashMap<>();
 
    // entries can be removed from timer thread while normally this is updated from one of blocking threads
@@ -272,10 +290,10 @@ public class AlertingServiceImpl implements AlertingService {
    @PostConstruct
    void init() {
       messageBus.subscribe(DataSetDAO.EVENT_LABELS_UPDATED, "AlertingService", DataSetDAO.LabelsUpdatedEvent.class, this::onLabelsUpdated);
-      messageBus.subscribe(DataSetDAO.EVENT_DELETED, "AlertingService", DataSetDAO.Info.class, this::onDatasetDeleted);
-      messageBus.subscribe(DataPointDAO.EVENT_NEW, "AlertingService", DataPointDAO.Event.class, this::onNewDataPoint);
-      messageBus.subscribe(RunDAO.EVENT_NEW, "AlertingService", RunDAO.class, this::removeExpected);
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "AlertingService", TestDAO.class, this::onTestDeleted);
+      //messageBus.subscribe(DataSetDAO.EVENT_DELETED, "AlertingService", DataSetDAO.Info.class, this::onDatasetDeleted);
+      //messageBus.subscribe(DataPointDAO.EVENT_NEW, "AlertingService", DataPointDAO.Event.class, this::onNewDataPoint);
+      //messageBus.subscribe(RunDAO.EVENT_NEW, "AlertingService", RunDAO.class, this::removeExpected);
+      //messageBus.subscribe(TestDAO.EVENT_DELETED, "AlertingService", TestDAO.class, this::onTestDeleted);
    }
 
    private void recalculateDatapointsForDataset(DataSetDAO dataset, boolean notify, boolean debug, Recalculation recalculation) {
@@ -500,8 +518,9 @@ public class AlertingServiceImpl implements AlertingService {
       dataPoint.timestamp = timestamp;
       dataPoint.value = value;
       dataPoint.persist();
-      messageBus.publish(DataPointDAO.EVENT_NEW, dataset.testid,
-              new DataPointDAO.Event(dataPoint, dataset.testid, notify));
+      //messageBus.publish(DataPointDAO.EVENT_NEW, dataset.testid,
+       //       new DataPointDAO.Event(dataPoint, dataset.testid, notify));
+      newDataPointEmitter.send(new DataPoint.Event(DataPointMapper.from(dataPoint), dataset.testid, notify));
    }
 
    private void logCalculationMessage(DataSetDAO dataSet, int level, String format, Object... args) {
@@ -535,15 +554,17 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onNewDataPoint(DataPointDAO.Event event) {
-      DataPointDAO dataPoint = event.dataPoint;
+   @Incoming("new-datapoint-in")
+   @ActivateRequestContext
+   void onNewDataPoint(DataPoint.Event event) {
+      DataPoint dataPoint = event.dataPoint;
       if (dataPoint.variable != null && dataPoint.variable.id != null) {
          VariableDAO variable = VariableDAO.findById(dataPoint.variable.id);
          if (variable != null) {
             log.debugf("Processing new datapoint for dataset %d at %s, variable %d (%s), value %f",
-                dataPoint.dataset.id, dataPoint.timestamp,
+                dataPoint.datasetId, dataPoint.timestamp,
                 variable.id, variable.name, dataPoint.value);
-            JsonNode fingerprint = FingerprintDAO.<FingerprintDAO>findByIdOptional(dataPoint.dataset.id).map(fp -> fp.fingerprint).orElse(null);
+            JsonNode fingerprint = FingerprintDAO.<FingerprintDAO>findByIdOptional(dataPoint.datasetId).map(fp -> fp.fingerprint).orElse(null);
 
             VarAndFingerprint key = new VarAndFingerprint(variable.id, fingerprint);
             log.debugf("Invalidating variable %d FP %s timestamp %s, current value is %s", variable.id, fingerprint, dataPoint.timestamp, validUpTo.get(key));
@@ -557,11 +578,11 @@ public class AlertingServiceImpl implements AlertingService {
             runChangeDetection(VariableDAO.findById(variable.id), fingerprint, event.notify, true);
          } else {
             log.warnf("Could not process new datapoint for dataset %d at %s, could not find variable by id %d ",
-                dataPoint.dataset.id, dataPoint.timestamp, dataPoint.variable == null ? -1 : dataPoint.variable.id);
+                dataPoint.datasetId, dataPoint.timestamp, dataPoint.variable == null ? -1 : dataPoint.variable.id);
          }
       } else {
          log.warnf( "Could not process new datapoint for dataset %d when the supplied variable or id reference is null ",
-             dataPoint.dataset.id);
+             dataPoint.datasetId);
       }
    }
 
@@ -654,8 +675,9 @@ public class AlertingServiceImpl implements AlertingService {
                em.persist(change);
                Hibernate.initialize(change.dataset.run.id);
                String testName = TestDAO.<TestDAO>findByIdOptional(variable.testId).map(test -> test.name).orElse("<unknown>");
-               messageBus.publish(Change.EVENT_NEW, change.dataset.testid,
-                       new Change.Event(ChangeMapper.from(change), testName, DataSetMapper.fromInfo(info), notify));
+               //messageBus.publish(Change.EVENT_NEW, change.dataset.testid,
+               //        new Change.Event(ChangeMapper.from(change), testName, DataSetMapper.fromInfo(info), notify));
+               newChangeEmitter.send(new Change.Event(ChangeMapper.from(change), testName, DataSetMapper.fromInfo(info), notify));
             });
          }
       }
@@ -1207,7 +1229,9 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void removeExpected(RunDAO run) {
+   @Incoming("new-run-in")
+   @ActivateRequestContext
+   public void removeExpected(Run run) {
       // delete at most one expectation
       Query query = em.createNativeQuery("DELETE FROM run_expectation WHERE id = (SELECT id FROM run_expectation WHERE testid = (SELECT testid FROM run WHERE id = ?1) LIMIT 1)");
       query.setParameter(1, run.id);
@@ -1219,11 +1243,14 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onDatasetDeleted(DataSetDAO.Info info) {
+   @Incoming("delete-dataset-in")
+   @ActivateRequestContext
+   void onDatasetDeleted(DataSet.Info info) {
       log.debugf("Removing datasets and changes for dataset %d (%d/%d, test %d)", info.id, info.runId, info.ordinal, info.testId);
       for (DataPointDAO dp : DataPointDAO.<DataPointDAO>list("dataset.id", info.id)) {
-         messageBus.publish(DataPointDAO.EVENT_DELETED, info.testId,
-                 new DataPointDAO.Event(dp, info.testId, false));
+         //messageBus.publish(DataPointDAO.EVENT_DELETED, info.testId,
+          //       new DataPointDAO.Event(dp, info.testId, false));
+         deleteDataPointEmitter.send( new DataPoint.Event(DataPointMapper.from(dp), info.testId, false));
          dp.delete();
       }
       for (ChangeDAO c: ChangeDAO.<ChangeDAO>list("dataset.id = ?1 AND confirmed = false", info.id)) {
@@ -1233,7 +1260,9 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onTestDeleted(TestDAO test) {
+   @Incoming("delete-test-in")
+   @ActivateRequestContext
+   void onTestDeleted(Test test) {
       // We need to delete in a loop to cascade this to ChangeDetection
       List<VariableDAO> variables = VariableDAO.list("testId", test.id);
       log.debugf("Deleting %d variables for test %s (%d)", variables.size(), test.name, test.id);

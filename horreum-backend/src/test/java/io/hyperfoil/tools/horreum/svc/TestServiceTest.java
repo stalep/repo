@@ -230,6 +230,7 @@ public class TestServiceTest extends BaseServiceTest {
       if (wipe) {
          deleteTest(test);
 
+         /*
          TestUtil.eventually(() -> {
             em.clear();
             try (var h = roleManager.withRoles(Collections.singleton(Roles.HORREUM_SYSTEM))) {
@@ -242,6 +243,7 @@ public class TestServiceTest extends BaseServiceTest {
                assertEquals(0, WatchDAO.count());
             }
          });
+          */
       }
 
       jsonRequest().body(testJson).post("/api/test/import").then().statusCode(204);

@@ -10,11 +10,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -30,6 +32,9 @@ import io.hyperfoil.tools.horreum.entity.data.*;
 import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
 import io.hyperfoil.tools.horreum.mapper.DatasetLogMapper;
 import io.hyperfoil.tools.horreum.mapper.ExperimentProfileMapper;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.Transformers;
@@ -65,10 +70,14 @@ public class ExperimentServiceImpl implements ExperimentService {
    @Inject
    MessageBus messageBus;
 
+   @Inject
+   @Channel("new-experimentresult-out")
+   Emitter<ExperimentResult> newExperimentResultEmitter;
+
    @PostConstruct
    void init() {
       messageBus.subscribe(DataPointDAO.EVENT_DATASET_PROCESSED, "ExperimentService", DataPointDAO.DatasetProcessedEvent.class, this::onDatapointsCreated);
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "ExperimentService", TestDAO.class, this::onTestDeleted);
+      //messageBus.subscribe(TestDAO.EVENT_DELETED, "ExperimentService", TestDAO.class, this::onTestDeleted);
    }
 
    @WithRoles
@@ -143,13 +152,17 @@ public class ExperimentServiceImpl implements ExperimentService {
    @Transactional
    public void onDatapointsCreated(DataPointDAO.DatasetProcessedEvent event) {
       // TODO: experiments can use any datasets, including private ones, possibly leaking the information
-      runExperiments(event.dataset, result -> messageBus.publish(ExperimentResult.NEW_RESULT, event.dataset.testId, result),
+      runExperiments(event.dataset,
+              //result -> messageBus.publish(ExperimentResult.NEW_RESULT, event.dataset.testId, result),
+              result -> newExperimentResultEmitter.send(result),
             logs -> logs.forEach(log -> log.persist()), event.notify);
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDeleted(TestDAO test) {
+   @Incoming("delete-test-in")
+   @ActivateRequestContext
+   public void onTestDeleted(Test test) {
       // we need to iterate in order to cascade the operation
       for (var profile : ExperimentProfileDAO.list("test.id", test.id)) {
          profile.delete();
@@ -163,7 +176,8 @@ public class ExperimentServiceImpl implements ExperimentService {
             level, "experiment", msg));
    }
 
-   private void runExperiments(DataSetDAO.Info info, Consumer<ExperimentResult> resultConsumer, Consumer<List<DatasetLogDAO>> noProfileConsumer, boolean notify) {
+   private void runExperiments(DataSetDAO.Info info, Consumer<ExperimentResult> resultConsumer,
+                               Consumer<List<DatasetLogDAO>> noProfileConsumer, boolean notify) {
       List<DatasetLogDAO> logs = new ArrayList<>();
 
       Query selectorQuery = em.createNativeQuery("WITH lvalues AS (" +

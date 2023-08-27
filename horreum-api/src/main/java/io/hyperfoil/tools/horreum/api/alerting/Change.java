@@ -12,7 +12,7 @@ public class Change {
     public int id;
     @JsonProperty( required = true )
     public Variable variable;
-    @JsonIgnore
+    //@JsonIgnore
     public DataSet dataset;
     @JsonProperty( required = true )
     public Instant timestamp;
@@ -29,7 +29,7 @@ public class Change {
     }
 
     public String toString() {
-        return "Change{id=" + this.id + ", variable=" + this.variable.id + ", dataset=" + this.dataset.id + " (" + this.dataset.runId + "/" + this.dataset.ordinal + "), timestamp=" + this.timestamp + ", confirmed=" + this.confirmed + ", description='" + this.description + '\'' + '}';
+        return "Change{id=" + this.id + ", variable=" + this.variable + ", dataset=" + this.dataset + ", timestamp=" + this.timestamp + ", confirmed=" + this.confirmed + ", description='" + this.description + '}';
     }
 
     public static class Event {

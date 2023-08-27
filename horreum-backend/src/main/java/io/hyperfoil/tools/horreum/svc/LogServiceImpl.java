@@ -5,9 +5,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.hyperfoil.tools.horreum.api.data.Test;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
@@ -18,6 +20,7 @@ import io.hyperfoil.tools.horreum.mapper.ActionLogMapper;
 import io.hyperfoil.tools.horreum.mapper.DatasetLogMapper;
 import io.hyperfoil.tools.horreum.mapper.TransformationLogMapper;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
 import io.hyperfoil.tools.horreum.api.services.LogService;
@@ -49,10 +52,12 @@ public class LogServiceImpl implements LogService {
    @Inject
    TimeService timeService;
 
+   /*
    @PostConstruct
    void init() {
       messageBus.subscribe(TestDAO.EVENT_DELETED, "LogService", TestDAO.class, this::onTestDelete);
    }
+    */
 
    private Integer withDefault(Integer value, Integer defValue) {
       return value != null ? value : defValue;
@@ -177,7 +182,9 @@ public class LogServiceImpl implements LogService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDelete(TestDAO test) {
+   @Incoming("delete-test-in")
+   @ActivateRequestContext
+   public void onTestDelete(Test test) {
       DatasetLogDAO.delete("test.id", test.id);
       TransformationLogDAO.delete("test.id", test.id);
    }
