@@ -40,7 +40,6 @@ public class DataSetDAO extends OwnedEntityBase {
    public static final String EVENT_NEW = "dataset/new";
    public static final String EVENT_LABELS_UPDATED = "dataset/updatedlabels";
    public static final String EVENT_MISSING_VALUES = "dataset/missing_values";
-   public static final String EVENT_DELETED = "dataset/deleted";
    public static final String EVENT_VALIDATED = "dataset/validated";
 
    @Id

@@ -285,7 +285,8 @@ public class SchemaServiceImpl implements SchemaService {
          validateData(run.metadata, schemaFilter, run.validationErrors::add);
       }
       run.persist();
-      messageBus.publish(RunDAO.EVENT_VALIDATED, run.testid, new SchemaDAO.ValidationEvent(run.id, run.validationErrors));
+      if(System.getProperties().containsKey("testing-mode"))
+         messageBus.publish(RunDAO.EVENT_VALIDATED, run.testid, new SchemaDAO.ValidationEvent(run.id, run.validationErrors));
    }
 
    private void validateDatasetData(String params) {

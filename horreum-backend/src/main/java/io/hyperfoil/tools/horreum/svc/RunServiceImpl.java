@@ -22,7 +22,10 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.hyperfoil.tools.horreum.api.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
+import io.hyperfoil.tools.horreum.mapper.DataSetMapper;
 import io.hypersistence.utils.hibernate.query.MapResultTransformer;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
@@ -126,10 +129,7 @@ public class RunServiceImpl implements RunService {
    MessageBus messageBus;
 
    @Inject
-   TestServiceImpl testService;
-
-   @Inject
-   DatasetServiceImpl datasetService;
+   ServiceMediator mediator;
 
    @Inject
    ObjectMapper mapper;
@@ -138,12 +138,11 @@ public class RunServiceImpl implements RunService {
    void init() {
       sqlService.registerListener("calculate_datasets", this::onCalculateDataSets);
       sqlService.registerListener("new_or_updated_schema", this::onNewOrUpdatedSchema);
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "RunService", TestDAO.class, this::onTestDeleted);
    }
 
    @Transactional
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
-   void onTestDeleted(TestDAO test) {
+   public void onTestDeleted(Test test) {
       log.debugf("Trashing runs for test %s (%d)", test.name, test.id);
       ScrollableResults results = Util.scroll(em.createNativeQuery("SELECT id FROM run WHERE testid = ?1").setParameter(1, test.id));
       while (results.next()) {
@@ -367,7 +366,7 @@ public class RunServiceImpl implements RunService {
          run.access = access;
       }
       log.debugf("About to add new run to test %s using owner", testNameOrId, owner);
-      TestDAO test = testService.ensureTestExists(testNameOrId, token);
+      TestDAO test = mediator.ensureTestExists(testNameOrId, token);
       run.testid = test.id;
       Integer runId = addAuthenticated(RunMapper.to(run), test);
       return Response.status(Response.Status.OK).entity(String.valueOf(runId)).header(HttpHeaders.LOCATION, "/run/" + runId).build();
@@ -432,6 +431,7 @@ public class RunServiceImpl implements RunService {
       // wait for at least one (1) dataset. we do not know how many datasets will be produced
       CountDownLatch dsAvailableLatch = new CountDownLatch(1);
       // create new dataset listener
+      //TODO: need to solve this as we're not pushing to the bus except when testing
       messageBus.subscribe(DataSetDAO.EVENT_NEW,"DatasetService", DataSetDAO.EventNew.class, (event) -> {
          if (event.dataset.run.id == runId) {
             dsAvailableLatch.countDown();
@@ -494,7 +494,7 @@ public class RunServiceImpl implements RunService {
          throw ServiceException.badRequest("Cannot parse stop time from " + foundStop + " (" + stop + ")");
       }
 
-      TestDAO testEntity = testService.ensureTestExists(testNameOrId, token);
+      TestDAO testEntity = mediator.ensureTestExists(testNameOrId, token);
 
       log.debugf("Creating new run for test %s(%d) with description %s", testEntity.name, testEntity.id, foundDescription);
 
@@ -582,7 +582,7 @@ public class RunServiceImpl implements RunService {
          throw ServiceException.serverError("Failed to persist run");
       }
       log.debugf("Upload flushed, run ID %d", run.id);
-      messageBus.publish(RunDAO.EVENT_NEW, test.id, run);
+      mediator.newRun(RunMapper.from(run));
 
       return run.id;
    }
@@ -880,10 +880,12 @@ public class RunServiceImpl implements RunService {
          List<DataSetDAO> datasets = DataSetDAO.list("run.id", id);
          log.debugf("Trashing run %d (test %d, %d datasets)", (long)run.id, (long)run.testid, datasets.size());
          for (var dataset : datasets) {
-            messageBus.publish(DataSetDAO.EVENT_DELETED, run.testid, dataset.getInfo());
+            mediator.deleteDataSet(DataSetMapper.fromInfo( dataset.getInfo()));
             dataset.delete();
          }
-         messageBus.publish(RunDAO.EVENT_TRASHED, run.testid, id);
+         //No other service is subscribed to this event other than tests
+         if(System.getProperties().containsKey("testing-mode"))
+            messageBus.publish(RunDAO.EVENT_TRASHED, run.testid, id);
       } else {
          transform(id, true);
       }
@@ -995,7 +997,7 @@ public class RunServiceImpl implements RunService {
          Recalculate r = results.get();
          log.debugf("Recalculate DataSets for run %d - forcing recalculation of all between %s and %s", r.runId, from, to);
          // transform will add proper roles anyway
-         messageBus.executeForTest(r.testId, () -> datasetService.withRecalculationLock(() -> transform(r.runId, true)));
+         messageBus.executeForTest(r.testId, () -> mediator.withRecalculationLock(() -> transform(r.runId, true)));
       }
    }
 
@@ -1023,7 +1025,7 @@ public class RunServiceImpl implements RunService {
       // We need to make sure all old datasets are gone before creating new; otherwise we could
       // break the runid,ordinal uniqueness constraint
       for (DataSetDAO old : DataSetDAO.<DataSetDAO>list("run.id", runId)) {
-         messageBus.publish(DataSetDAO.EVENT_DELETED, old.testid, old.getInfo());
+         mediator.deleteDataSet(DataSetMapper.fromInfo( old.getInfo()));
          old.delete();
       }
 
@@ -1219,7 +1221,11 @@ public class RunServiceImpl implements RunService {
    private void createDataset(DataSetDAO ds, boolean isRecalculation) {
       try {
          ds.persist();
-         messageBus.publish(DataSetDAO.EVENT_NEW, ds.testid, new DataSetDAO.EventNew(ds, isRecalculation));
+         mediator.newDataSet(new DataSet.EventNew(DataSetMapper.from(ds), isRecalculation));
+         //Only push to the messageBus when testing
+         //This will not trigger any logic inside Horreum
+         if(System.getProperties().containsKey("testing-mode"))
+            messageBus.publish(DataSetDAO.EVENT_NEW, ds.testid, new DataSetDAO.EventNew(ds, isRecalculation));
       } catch (TransactionRequiredException tre) {
          log.error("Failed attempt to persist and send DataSet event during inactive Transaction. Likely due to prior error.", tre);
       }

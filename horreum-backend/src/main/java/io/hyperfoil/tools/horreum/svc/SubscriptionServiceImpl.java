@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hyperfoil.tools.horreum.api.data.Test;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -48,7 +49,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
    @PostConstruct
    void init() {
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "SubscriptionService", TestDAO.class, this::onTestDelete);
+      //messageBus.subscribe(TestDAO.EVENT_DELETED, "SubscriptionService", TestDAO.class, this::onTestDelete);
    }
 
    private static Set<String> merge(Set<String> set, String item) {
@@ -248,7 +249,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDelete(TestDAO test) {
+   public void onTestDelete(Test test) {
       var subscriptions = WatchDAO.list("test.id = ?1", test.id);
       log.infof("Deleting %d subscriptions for test %s (%d)", subscriptions.size(), test.name, test.id);
       for (var subscription : subscriptions) {

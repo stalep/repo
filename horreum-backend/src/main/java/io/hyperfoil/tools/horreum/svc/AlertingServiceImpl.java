@@ -1,7 +1,5 @@
 package io.hyperfoil.tools.horreum.svc;
 
-import java.math.BigInteger;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +24,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import io.hyperfoil.tools.horreum.api.data.DataSet;
+import io.hyperfoil.tools.horreum.api.data.Run;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.hibernate.IntArrayType;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
 import jakarta.annotation.PostConstruct;
@@ -64,9 +65,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.AliasToBeanResultTransformer;
 import org.hibernate.transform.Transformers;
-import org.hibernate.type.CustomType;
 import org.hibernate.type.StandardBasicTypes;
-import org.hibernate.type.spi.TypeConfiguration;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -153,7 +152,7 @@ public class AlertingServiceImpl implements AlertingService {
          FixedThresholdModel.NAME, new FixedThresholdModel());
 
    @Inject
-   TestServiceImpl testService;
+   ServiceMediator mediator;
 
    @Inject
    EntityManager em;
@@ -180,9 +179,6 @@ public class AlertingServiceImpl implements AlertingService {
    Vertx vertx;
 
    @Inject
-   NotificationServiceImpl notificationService;
-
-   @Inject
    TimeService timeService;
 
    static ConcurrentHashMap<Integer, AtomicInteger> retryCounterSet = new ConcurrentHashMap<>();
@@ -200,7 +196,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onLabelsUpdated(DataSetDAO.LabelsUpdatedEvent event) {
+   public void onLabelsUpdated(DataSet.LabelsUpdatedEvent event) {
       boolean sendNotifications;
       DataPointDAO.delete("dataset.id", event.datasetId);
       DataSetDAO dataset = DataSetDAO.findById(event.datasetId);
@@ -271,11 +267,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @PostConstruct
    void init() {
-      messageBus.subscribe(DataSetDAO.EVENT_LABELS_UPDATED, "AlertingService", DataSetDAO.LabelsUpdatedEvent.class, this::onLabelsUpdated);
-      messageBus.subscribe(DataSetDAO.EVENT_DELETED, "AlertingService", DataSetDAO.Info.class, this::onDatasetDeleted);
       messageBus.subscribe(DataPointDAO.EVENT_NEW, "AlertingService", DataPointDAO.Event.class, this::onNewDataPoint);
-      messageBus.subscribe(RunDAO.EVENT_NEW, "AlertingService", RunDAO.class, this::removeExpected);
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "AlertingService", TestDAO.class, this::onTestDeleted);
    }
 
    private void recalculateDatapointsForDataset(DataSetDAO dataset, boolean notify, boolean debug, Recalculation recalculation) {
@@ -488,7 +480,9 @@ public class AlertingServiceImpl implements AlertingService {
             output -> logCalculationMessage(dataset, PersistentLog.DEBUG, "Output while calculating variable: <pre>%s</pre>", output)
       );
       if (!missingValueVariables.isEmpty()) {
-         messageBus.publish(DataSetDAO.EVENT_MISSING_VALUES, dataset.testid, new MissingValuesEvent(dataset.getInfo(), missingValueVariables, notify));
+         mediator.missingValuesDataset(new MissingValuesEvent(dataset.getInfo(), missingValueVariables, notify));
+         if(System.getProperties().containsKey("testing-mode"))
+            messageBus.publish(DataSetDAO.EVENT_MISSING_VALUES, dataset.testid, new MissingValuesEvent(dataset.getInfo(), missingValueVariables, notify));
       }
       messageBus.publish(DataPointDAO.EVENT_DATASET_PROCESSED, dataset.testid, new DataPointDAO.DatasetProcessedEvent(dataset.getInfo(), notify));
    }
@@ -654,8 +648,13 @@ public class AlertingServiceImpl implements AlertingService {
                em.persist(change);
                Hibernate.initialize(change.dataset.run.id);
                String testName = TestDAO.<TestDAO>findByIdOptional(variable.testId).map(test -> test.name).orElse("<unknown>");
-               messageBus.publish(Change.EVENT_NEW, change.dataset.testid,
-                       new Change.Event(ChangeMapper.from(change), testName, DataSetMapper.fromInfo(info), notify));
+
+               //Only used for testing
+               if(System.getProperties().containsKey("testing-mode"))
+                  messageBus.publish(Change.EVENT_NEW, change.dataset.testid,
+                          new Change.Event(ChangeMapper.from(change), testName, DataSetMapper.fromInfo(info), notify));
+
+               mediator.newChange(new Change.Event(ChangeMapper.from(change), testName, DataSetMapper.fromInfo(info), notify));
             });
          }
       }
@@ -1015,7 +1014,7 @@ public class AlertingServiceImpl implements AlertingService {
             if (ruleName == null) {
                ruleName = "rule #" + ruleId;
             }
-            notificationService.notifyMissingDataset(testId, ruleName, maxStaleness, timestamp);
+            mediator.notifyMissingDataset(testId, ruleName, maxStaleness, timestamp);
             int numUpdated = em.createNativeQuery("UPDATE missingdata_rule SET last_notification = ?1 WHERE id = ?2")
                   .setParameter(1, timeService.now()).setParameter(2, ruleId).executeUpdate();
             if (numUpdated != 1) {
@@ -1048,7 +1047,7 @@ public class AlertingServiceImpl implements AlertingService {
       } else if (timeoutSeconds <= 0) {
          throw ServiceException.badRequest("Timeout must be positive (unit: seconds)");
       }
-      TestDAO test = testService.ensureTestExists(testNameOrId, null);
+      TestDAO test = mediator.ensureTestExists(testNameOrId, null);
       RunExpectationDAO runExpectation = new RunExpectationDAO();
       runExpectation.testId = test.id;
       runExpectation.expectedBefore = timeService.now().plusSeconds(timeoutSeconds);
@@ -1072,7 +1071,7 @@ public class AlertingServiceImpl implements AlertingService {
    @Transactional
    @Override
    public void updateChangeDetection(int testId, AlertingService.ChangeDetectionUpdate update) {
-      TestDAO test = testService.getTestForUpdate(testId);
+      TestDAO test = mediator.getTestForUpdate(testId);
       test.timelineLabels = toJsonArray(update.timelineLabels);
       test.timelineFunction = "";
       test.timelineFunction = update.timelineFunction;
@@ -1126,7 +1125,7 @@ public class AlertingServiceImpl implements AlertingService {
    public int updateMissingDataRule(int testId, MissingDataRule dto) {
       MissingDataRuleDAO rule = MissingDataRuleMapper.to(dto);
       // check test existence and ownership
-      testService.getTestForUpdate(testId);
+      mediator.getTestForUpdate(testId);
       if (rule.id != null && rule.id <= 0) {
          rule.id = null;
       }
@@ -1207,7 +1206,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void removeExpected(RunDAO run) {
+   public void removeExpected(Run run) {
       // delete at most one expectation
       Query query = em.createNativeQuery("DELETE FROM run_expectation WHERE id = (SELECT id FROM run_expectation WHERE testid = (SELECT testid FROM run WHERE id = ?1) LIMIT 1)");
       query.setParameter(1, run.id);
@@ -1219,11 +1218,13 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onDatasetDeleted(DataSetDAO.Info info) {
+   void onDatasetDeleted(DataSet.Info info) {
       log.debugf("Removing datasets and changes for dataset %d (%d/%d, test %d)", info.id, info.runId, info.ordinal, info.testId);
       for (DataPointDAO dp : DataPointDAO.<DataPointDAO>list("dataset.id", info.id)) {
-         messageBus.publish(DataPointDAO.EVENT_DELETED, info.testId,
-                 new DataPointDAO.Event(dp, info.testId, false));
+         //Only send to the bus for testing
+         if(System.getProperties().containsKey("testing-mode"))
+            messageBus.publish(DataPointDAO.EVENT_DELETED, info.testId,
+                    new DataPointDAO.Event(dp, info.testId, false));
          dp.delete();
       }
       for (ChangeDAO c: ChangeDAO.<ChangeDAO>list("dataset.id = ?1 AND confirmed = false", info.id)) {
@@ -1233,7 +1234,7 @@ public class AlertingServiceImpl implements AlertingService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   void onTestDeleted(TestDAO test) {
+   public void onTestDeleted(Test test) {
       // We need to delete in a loop to cascade this to ChangeDetection
       List<VariableDAO> variables = VariableDAO.list("testId", test.id);
       log.debugf("Deleting %d variables for test %s (%d)", variables.size(), test.name, test.id);
@@ -1253,7 +1254,7 @@ public class AlertingServiceImpl implements AlertingService {
                .setParameter(1, expectation.testId).getSingleResult();
          if (sendNotifications) {
             // We will perform this only if this transaction succeeds, to allow no-op retries
-            Util.doAfterCommit(tm, () -> notificationService.notifyExpectedRun(expectation.testId,
+            Util.doAfterCommit(tm, () -> mediator.notifyExpectedRun(expectation.testId,
                   expectation.expectedBefore.toEpochMilli(), expectation.expectedBy, expectation.backlink));
          } else {
             log.debugf("Skipping expected run notification on test %d since it is disabled.", expectation.testId);

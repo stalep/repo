@@ -1,7 +1,6 @@
 package io.hyperfoil.tools.horreum.svc;
 
 import java.io.ByteArrayOutputStream;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,8 +13,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.hyperfoil.tools.horreum.api.data.Test;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,9 +34,7 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.hibernate.Hibernate;
 import org.hibernate.query.NativeQuery;
-import org.hibernate.type.CustomType;
 import org.hibernate.type.StandardBasicTypes;
-import org.hibernate.type.spi.TypeConfiguration;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -47,7 +44,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import io.hyperfoil.tools.horreum.api.services.ReportService;
 import io.hyperfoil.tools.horreum.api.SortDirection;
-import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.PersistentLog;
 import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.hyperfoil.tools.horreum.server.WithRoles;
@@ -70,15 +66,7 @@ public class ReportServiceImpl implements ReportService {
    EntityManager em;
 
    @Inject
-   MessageBus messageBus;
-
-   @Inject
    TimeService timeService;
-
-   @PostConstruct
-   void init() {
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "ReportService", TestDAO.class, this::onTestDelete);
-   }
 
    @PermitAll
    @WithRoles
@@ -719,7 +707,7 @@ public class ReportServiceImpl implements ReportService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDelete(TestDAO test) {
+   public void onTestDelete(Test test) {
       int changedRows = em.createNativeQuery("UPDATE tablereportconfig SET testid = NULL WHERE testid = ?")
             .setParameter(1, test.id).executeUpdate();
       log.infof("Disowned %d report configs as test %s(%d) was deleted.", changedRows, test.name, test.id);

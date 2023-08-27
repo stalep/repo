@@ -142,6 +142,7 @@ public class BaseServiceTest {
 
    @BeforeEach
    public void beforeMethod(TestInfo info) {
+       System.getProperties().putIfAbsent("testing-mode", "true");
       log.debugf("Starting test %s.%s", info.getTestClass().map(Class::getSimpleName).orElse("<unknown>"), info.getDisplayName());
    }
 

@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
+import io.hyperfoil.tools.horreum.api.data.Test;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,11 +21,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.hyperfoil.tools.horreum.api.services.LogService;
-import io.hyperfoil.tools.horreum.bus.MessageBus;
 import io.hyperfoil.tools.horreum.entity.ActionLogDAO;
 import io.hyperfoil.tools.horreum.entity.alerting.DatasetLogDAO;
 import io.hyperfoil.tools.horreum.entity.alerting.TransformationLogDAO;
-import io.hyperfoil.tools.horreum.entity.data.TestDAO;
 import io.hyperfoil.tools.horreum.server.WithRoles;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -44,15 +42,7 @@ public class LogServiceImpl implements LogService {
    String transformationLogMaxLifespan;
 
    @Inject
-   MessageBus messageBus;
-
-   @Inject
    TimeService timeService;
-
-   @PostConstruct
-   void init() {
-      messageBus.subscribe(TestDAO.EVENT_DELETED, "LogService", TestDAO.class, this::onTestDelete);
-   }
 
    private Integer withDefault(Integer value, Integer defValue) {
       return value != null ? value : defValue;
@@ -177,7 +167,7 @@ public class LogServiceImpl implements LogService {
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)
    @Transactional
-   public void onTestDelete(TestDAO test) {
+   public void onTestDelete(Test test) {
       DatasetLogDAO.delete("test.id", test.id);
       TransformationLogDAO.delete("test.id", test.id);
    }

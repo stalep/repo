@@ -65,14 +65,9 @@ public class NotificationServiceImpl implements NotificationService {
    @Inject
    TransactionManager tm;
 
-   @Inject
-   MessageBus messageBus;
-
    @PostConstruct
    public void init() {
       notificationPlugins.forEach(plugin -> plugins.put(plugin.method(), plugin));
-      messageBus.subscribe(DatasetChanges.EVENT_NEW, "NotificationService", DatasetChanges.class, this::onNewChanges);
-      messageBus.subscribe(DataSetDAO.EVENT_MISSING_VALUES, "NotificationService", MissingValuesEvent.class, this::onMissingValues);
    }
 
    @WithRoles(extras = Roles.HORREUM_SYSTEM)

@@ -47,8 +47,6 @@ import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.transform.Transformers;
-import org.hibernate.type.CustomType;
-import org.hibernate.type.spi.TypeConfiguration;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -81,22 +79,7 @@ public class TestServiceImpl implements TestService {
    SecurityIdentity identity;
 
    @Inject
-   RunServiceImpl runService;
-
-   @Inject
-   DatasetServiceImpl datasetService;
-
-   @Inject
-   ActionServiceImpl actionService;
-
-   @Inject
-   AlertingServiceImpl alertingService;
-
-   @Inject
-   ExperimentServiceImpl experimentService;
-
-   @Inject
-   SubscriptionServiceImpl subscriptionService;
+   ServiceMediator mediator;
 
    @Inject
    EncryptionManager encryptionManager;
@@ -116,7 +99,7 @@ public class TestServiceImpl implements TestService {
       }
       log.debugf("Deleting test %s (%d)", test.name, test.id);
       test.delete();
-      messageBus.publish(TestDAO.EVENT_DELETED, test.id, test);
+      mediator.deleteTest(TestMapper.from(test));
    }
 
    @Override
@@ -229,7 +212,7 @@ public class TestServiceImpl implements TestService {
                throw new WebApplicationException(e, Response.serverError().build());
             }
          }
-         messageBus.publish(TestDAO.EVENT_NEW, test.id, test);
+         mediator.newTest(TestMapper.from(test));
       }
    }
 
@@ -477,7 +460,7 @@ public class TestServiceImpl implements TestService {
       // just ensure the test exists
       getTestForUpdate(testId);
       dto.testId = testId;
-      actionService.validate(dto);
+      mediator.validate(dto);
 
       ActionDAO action = ActionMapper.to(dto);
       if (action.id == null) {
@@ -487,7 +470,7 @@ public class TestServiceImpl implements TestService {
             ActionDAO.deleteById(action.id);
             return null;
          } else {
-            actionService.merge(action);
+            mediator.merge(action);
          }
       }
       em.flush();
@@ -567,10 +550,10 @@ public class TestServiceImpl implements TestService {
          int runId = (int) results.get();
          log.debugf("Recalculate DataSets for run %d - forcing recalculation for test %d (%s)", runId, testId, test.name);
          // transform will add proper roles anyway
-         messageBus.executeForTest(testId, () -> datasetService.withRecalculationLock(() -> {
+         messageBus.executeForTest(testId, () -> mediator.withRecalculationLock(() -> {
             int newDatasets = 0;
             try {
-               newDatasets = runService.transform(runId, true);
+               newDatasets = mediator.transform(runId, true);
             } finally {
                synchronized (status) {
                   status.finished++;
@@ -637,10 +620,11 @@ public class TestServiceImpl implements TestService {
             }
          }
       }
-      export.set("alerting", alertingService.exportTest(testId));
-      export.set("actions", actionService.exportTest(testId));
-      export.set("experiments", experimentService.exportTest(testId));
-      export.set("subscriptions", subscriptionService.exportSubscriptions(testId));
+      mediator.exportTest(export, testId);
+      //export.set("alerting", alertingService.exportTest(testId));
+      //export.set("actions", actionService.exportTest(testId));
+      //export.set("experiments", experimentService.exportTest(testId));
+      //export.set("subscriptions", subscriptionService.exportSubscriptions(testId));
       return export;
    }
 
@@ -698,10 +682,11 @@ public class TestServiceImpl implements TestService {
       } catch (JsonProcessingException e) {
          throw ServiceException.badRequest("Failed to deserialize test: " + e.getMessage());
       }
-      alertingService.importTest(dto.id, alerting, forceUseTestId);
-      actionService.importTest(dto.id, actions, forceUseTestId);
-      experimentService.importTest(dto.id, experiments, forceUseTestId);
-      subscriptionService.importSubscriptions(dto.id, subscriptions);
+      mediator.importTestToAll(dto.id, alerting, actions, experiments, subscriptions, forceUseTestId);
+      //alertingService.importTest(dto.id, alerting, forceUseTestId);
+      //actionService.importTest(dto.id, actions, forceUseTestId);
+      //experimentService.importTest(dto.id, experiments, forceUseTestId);
+      //subscriptionService.importSubscriptions(dto.id, subscriptions);
    }
 
    TestDAO getTestForUpdate(int testId) {
