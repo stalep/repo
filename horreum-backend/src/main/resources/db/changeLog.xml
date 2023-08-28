@@ -4117,4 +4117,17 @@
             GRANT ALL ON SEQUENCE ActionLog_SEQ, AllowedSite_SEQ, Banner_SEQ, Change_SEQ, DataPoint_SEQ, DatasetLog_SEQ, NotificationSettings_SEQ, ReportComment_SEQ, ReportComponent_SEQ, ReportLog_SEQ, Run_Expectation_SEQ, TableReport_SEQ, TableReportConfig_SEQ, TransformationLog_SEQ, changeDetectionIdGenerator, experimentProfileIdGenerator, mdrIdGenerator, subscriptionIdGenerator, tokenIdGenerator, transformerIdGenerator, variableIdGenerator, viewComponentIdGenerator, viewIdGenerator TO "${quarkus.datasource.username}";
         </sql>
     </changeSet>
+    <!--
+    <changeSet id="108" author="stalep">
+        <dropColumn tableName="dataset" columnName="runid"/>
+        <addColumn tableName="dataset">
+            <column name="runid" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint constraintName="fk_dataset_run_id"
+                                 baseTableName="dataset" baseColumnNames="runid"
+                                 referencedTableName="run" referencedColumnNames="id" />
+    </changeSet>
+    -->
 </databaseChangeLog>

@@ -173,7 +173,14 @@ public class BaseServiceTest {
             VariableDAO.deleteAll();
 
             DataSetDAO.deleteAll();
-            RunDAO.deleteAll();
+            // https://github.com/quarkusio/quarkus/issues/13941
+            List<RunDAO> runs = RunDAO.listAll();
+            for(RunDAO run : runs) {
+               List<DataSetDAO> dataSets = DataSetDAO.list("run.id = "+run.id);
+               for(DataSetDAO dsd : dataSets)
+                  dsd.delete();
+               run.delete();
+            }
 
             em.createNativeQuery("DELETE FROM label_extractors").executeUpdate();
             LabelDAO.deleteAll();
