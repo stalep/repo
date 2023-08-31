@@ -4117,4 +4117,12 @@
             GRANT ALL ON SEQUENCE ActionLog_SEQ, AllowedSite_SEQ, Banner_SEQ, Change_SEQ, DataPoint_SEQ, DatasetLog_SEQ, NotificationSettings_SEQ, ReportComment_SEQ, ReportComponent_SEQ, ReportLog_SEQ, Run_Expectation_SEQ, TableReport_SEQ, TableReportConfig_SEQ, TransformationLog_SEQ, changeDetectionIdGenerator, experimentProfileIdGenerator, mdrIdGenerator, subscriptionIdGenerator, tokenIdGenerator, transformerIdGenerator, variableIdGenerator, viewComponentIdGenerator, viewIdGenerator TO "${quarkus.datasource.username}";
         </sql>
     </changeSet>
+    <changeSet id="108" author="stalep">
+        <sql>
+            DROP TRIGGER before_run_delete ON run;
+            DROP FUNCTION before_run_delete_func();
+            DROP TRIGGER before_schema_delete ON schema;
+            DROP FUNCTION before_schema_delete_func();
+        </sql>
+    </changeSet>
 </databaseChangeLog>
