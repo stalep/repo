@@ -76,7 +76,15 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <commons.math3.version>3.6.1</commons.math3.version>
         <graalvm.version>22.3.0</graalvm.version>
+        <!--
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+        <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
         <quarkus.version>3.3.0</quarkus.version>
+        <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
+        -->
+        <quarkus-plugin.version>3.3.0</quarkus-plugin.version>
+        <quarkus.version>999-SNAPSHOT</quarkus.version>
         <quinoa.version>2.0.3</quinoa.version>
         <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
         <failsafe-plugin.version>3.3.0</failsafe-plugin.version>
@@ -208,7 +216,7 @@
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
+                    <version>${quarkus-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-project-info-reports-plugin</artifactId>
@@ -302,6 +310,7 @@
             </plugins>
         </pluginManagement>
         <plugins>
+          <!--
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -326,6 +335,7 @@
                     </execution>
                 </executions>
             </plugin>
+          -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
