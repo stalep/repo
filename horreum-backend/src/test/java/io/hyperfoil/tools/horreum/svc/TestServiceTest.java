@@ -2,6 +2,7 @@ package io.hyperfoil.tools.horreum.svc;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.stream.StreamSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hyperfoil.tools.horreum.bus.MessageBusChannels;
+import io.hyperfoil.tools.horreum.entity.FingerprintDAO;
 import io.hyperfoil.tools.horreum.hibernate.JsonBinaryType;
 import io.hyperfoil.tools.horreum.test.HorreumTestProfile;
 import io.hyperfoil.tools.horreum.api.alerting.Watch;
@@ -22,6 +24,8 @@ import io.hyperfoil.tools.horreum.api.data.Extractor;
 import io.hyperfoil.tools.horreum.api.data.ViewComponent;
 import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.entity.data.*;
+import io.restassured.common.mapper.TypeRef;
+import io.restassured.response.Response;
 import org.hibernate.query.NativeQuery;
 import org.junit.jupiter.api.TestInfo;
 
@@ -289,6 +293,51 @@ public class TestServiceTest extends BaseServiceTest {
       jsonRequest().body(t).post("/api/test/import").then().statusCode(204);
       TestDAO test = TestDAO.<TestDAO>find("name", "quarkus-spring-boot-comparison").firstResult();
       assertEquals(1, test.transformers.size());
+
+   }
+
+   @org.junit.jupiter.api.Test
+   public void testListLabelValues() throws JsonProcessingException {
+      Path p = new File(getClass().getClassLoader().getResource(".").getPath()).toPath();
+      p = p.getParent().getParent().getParent().resolve("infra-legacy/example-data/");
+
+      String s = readFile(p.resolve("quarkus_sb_schema.json").toFile());
+      jsonRequest().body(s).post("/api/schema/import").then().statusCode(204);
+
+      String t = readFile(p.resolve("quarkus_sb_test.json").toFile());
+      jsonRequest().body(t).post("/api/test/import").then().statusCode(204);
+      TestDAO test = TestDAO.<TestDAO>find("name", "quarkus-spring-boot-comparison").firstResult();
+      assertEquals(1, test.transformers.size());
+
+      JsonNode data = mapper.readTree( readFile(p.resolve("quarkus_sb_run1.json").toFile()));
+      Run r = new Run();
+//      assertEquals("dev-team", r.owner);
+      r.owner = "foo-team";
+      r.testid = test.id;
+      r.data = data;
+      r.start = Instant.parse(r.data.get("timing").get("start").textValue());
+      r.stop = Instant.parse(r.data.get("timing").get("stop").textValue());
+      Response response = jsonRequest()
+              .auth()
+              .oauth2(getUploaderToken())
+              .body(r)
+              .post("/api/run/test");
+      assertEquals(200, response.statusCode());
+
+      List<JsonNode> labelVales = jsonRequest().get("/api/test/"+test.id+"/labelValues")
+              .then().statusCode(200).extract().body().as(new TypeRef<>() { });
+
+      List<DatasetDAO> datasets = DatasetDAO.listAll();
+      datasets.forEach(System.out::println);
+      List<LabelDAO> labels = LabelDAO.listAll();
+      labels.forEach(System.out::println);
+
+
+      List<LabelDAO.Value> labelValues = LabelDAO.Value.listAll();
+      labelValues.forEach(System.out::println);
+
+      List<FingerprintDAO> fps = FingerprintDAO.listAll();
+      fps.forEach(System.out::println);
 
    }
 
