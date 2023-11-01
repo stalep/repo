@@ -396,6 +396,10 @@ public class DatasetServiceImpl implements DatasetService {
                      .addScalar("function", StandardBasicTypes.TEXT)
                      .addScalar("value", JsonBinaryType.INSTANCE)
                      .getResultList();
+
+         long count = (Long) em.unwrap(Session.class).createNativeQuery("select count(*) from dataset_schemas").getSingleResult();
+         System.out.println("count = " + count);
+
       } catch (PersistenceException e) {
          logMessageInNewTx(datasetId, PersistentLogDAO.ERROR, "Failed to extract data (JSONPath expression error?): " + Util.explainCauses(e));
          findFailingExtractor(datasetId);
