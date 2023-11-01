@@ -39,13 +39,7 @@ import com.fasterxml.jackson.databind.JsonNode;
             "FROM run r, transformer t " +
             "JOIN transformer_extractors te ON te.transformer_id = t.id " +
             "WHERE r.id = ?1 AND t.id = ?2"
-   ),
-   @NamedNativeQuery(
-         name = SchemaDAO.QUERY_TRANSFORMER_TARGETS,
-         query = "SELECT rs.type, rs.key, t.id as transformer_id, rs.uri, rs.source FROM run_schemas rs " +
-               "LEFT JOIN transformer t ON t.schema_id = rs.schemaid AND t.id IN (SELECT transformer_id FROM test_transformers WHERE test_id = rs.testid) " +
-               "WHERE rs.runid = ?1 ORDER BY transformer_id NULLS LAST, type, key"
-         )
+   )
 })
 
 @Entity(name = "Schema")
@@ -58,7 +52,6 @@ public class SchemaDAO extends ProtectedBaseEntity {
 
    public static final String QUERY_1ST_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID = "Schema.getFirstLevelExtractorsByRunIDTransIDSchemaID";
    public static final String QUERY_2ND_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID = "Schema.getSecondLevelExtractorsByRunIDTransIDSchemaID";
-   public static final String QUERY_TRANSFORMER_TARGETS = "Schema.queryTransformerTargets";
    public static final int TYPE_1ST_LEVEL = 0;
    public static final int TYPE_2ND_LEVEL = 1;
    public static final int TYPE_ARRAY_ELEMENT = 2;

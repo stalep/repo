@@ -79,7 +79,6 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import static com.fasterxml.jackson.databind.node.JsonNodeFactory.instance;
 import static io.hyperfoil.tools.horreum.entity.data.SchemaDAO.QUERY_1ST_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID;
 import static io.hyperfoil.tools.horreum.entity.data.SchemaDAO.QUERY_2ND_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID;
-import static io.hyperfoil.tools.horreum.entity.data.SchemaDAO.QUERY_TRANSFORMER_TARGETS;
 
 @ApplicationScoped
 @Startup
@@ -104,6 +103,9 @@ public class RunServiceImpl implements RunService {
          "'id', schema.id, 'uri', rs.uri, 'name', schema.name, 'source', rs.source, " +
          "'type', rs.type, 'key', rs.key, 'hasJsonSchema', schema.schema IS NOT NULL)), '[]')";
 
+   private static final String QUERY_TRANSFORMER_TARGETS = "SELECT rs.type, rs.key, t.id as transformer_id, rs.uri, rs.source FROM run_schemas rs " +
+           "LEFT JOIN transformer t ON t.schema_id = rs.schemaid AND t.id IN (SELECT transformer_id FROM test_transformers WHERE test_id = rs.testid) " +
+           "WHERE rs.runid = ?1 ORDER BY transformer_id NULLS LAST, type, key";
    @Inject
    EntityManager em;
 
@@ -1052,29 +1054,31 @@ public class RunServiceImpl implements RunService {
       // naked nodes (those produced by implicit identity transformers) are all added to each dataset
       List<JsonNode> nakedNodes = new ArrayList<>();
 
-      List<Object[]> relevantSchemas = unchecked(em.createNamedQuery(QUERY_TRANSFORMER_TARGETS)
+      List<RelevantSchema> relevantSchemas = session.createNativeQuery(QUERY_TRANSFORMER_TARGETS, Tuple.class)
             .setParameter(1, run.id)
-            .unwrap(NativeQuery.class)
             .addScalar("type", StandardBasicTypes.INTEGER)
             .addScalar("key", StandardBasicTypes.TEXT)
             .addScalar("transformer_id", StandardBasicTypes.INTEGER)
             .addScalar("uri", StandardBasicTypes.TEXT)
             .addScalar("source", StandardBasicTypes.INTEGER)
-            .getResultList() );
+              .setTupleTransformer((tuple, aliases) -> {
+                 RelevantSchema rs = new RelevantSchema();
+                 rs.type = (int) tuple[0];
+                 rs.key = (String) tuple[1];
+                 rs.transformerId = (Integer) tuple[2];
+                 rs.uri = (String) tuple[3];
+                 rs.source = (int) tuple[4];
+                 return rs;
+              })
+            .getResultList() ;
 
       int schemasAndTransformers = relevantSchemas.size();
-      for (Object[] relevantSchema : relevantSchemas) {
-         int type = (int) relevantSchema[0];
-         String key = (String) relevantSchema[1];
-         Integer transformerId = (Integer) relevantSchema[2];
-         String uri = (String) relevantSchema[3];
-         Integer source = (Integer) relevantSchema[4];
-
+      for (RelevantSchema rs : relevantSchemas) {
          TransformerDAO t;
-         if (transformerId != null) {
-            t = TransformerDAO.findById(transformerId);
+         if (rs.transformerId != null) {
+            t = TransformerDAO.findById(rs.transformerId);
             if (t == null) {
-               log.errorf("Missing transformer with ID %d", transformerId);
+               log.errorf("Missing transformer with ID %d", rs.transformerId);
             }
          } else {
             t = null;
@@ -1085,19 +1089,19 @@ public class RunServiceImpl implements RunService {
             if (t.extractors != null && !t.extractors.isEmpty()) {
                List<Object[]> extractedData;
                try {
-                  if (type == SchemaDAO.TYPE_1ST_LEVEL) {
+                  if (rs.type == SchemaDAO.TYPE_1ST_LEVEL) {
                      // note: metadata always follow the 2nd level format
                      extractedData = unchecked(em.createNamedQuery(QUERY_1ST_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID)
-                           .setParameter(1, run.id).setParameter(2, transformerId)
+                           .setParameter(1, run.id).setParameter(2, rs.transformerId)
                            .unwrap(NativeQuery.class)
                            .addScalar("name", StandardBasicTypes.TEXT)
                            .addScalar("value", JsonBinaryType.INSTANCE)
                            .getResultList());
                   } else {
                      extractedData = unchecked(em.createNamedQuery(QUERY_2ND_LEVEL_BY_RUNID_TRANSFORMERID_SCHEMA_ID)
-                           .setParameter(1, run.id).setParameter(2, transformerId)
-                           .setParameter(3, type == SchemaDAO.TYPE_2ND_LEVEL ? key : Integer.parseInt(key))
-                           .setParameter(4, source)
+                           .setParameter(1, run.id).setParameter(2, rs.transformerId)
+                           .setParameter(3, rs.type == SchemaDAO.TYPE_2ND_LEVEL ? rs.key : Integer.parseInt(rs.key))
+                           .setParameter(4, rs.source)
                            .unwrap(NativeQuery.class)
                            .addScalar("name", StandardBasicTypes.TEXT)
                            .addScalar("value", JsonBinaryType.INSTANCE)
@@ -1121,12 +1125,12 @@ public class RunServiceImpl implements RunService {
                }
             }
             logMessage(run, PersistentLogDAO.DEBUG, "Run transformer %s/%s with input: <pre>%s</pre>, function: <pre>%s</pre>",
-                  uri, t.name, limitLength(root.toPrettyString()), t.function);
+                  rs.uri, t.name, limitLength(root.toPrettyString()), t.function);
             if (t.function != null && !t.function.isBlank()) {
                result = Util.evaluateOnce(t.function, root, Util::convertToJson,
                      (code, e) -> logMessage(run, PersistentLogDAO.ERROR,
-                           "Evaluation of transformer %s/%s failed: '%s' Code: <pre>%s</pre>", uri, t.name, e.getMessage(), code),
-                     output -> logMessage(run, PersistentLogDAO.DEBUG, "Output while running transformer %s/%s: <pre>%s</pre>", uri, t.name, output));
+                           "Evaluation of transformer %s/%s failed: '%s' Code: <pre>%s</pre>", rs.uri, t.name, e.getMessage(), code),
+                     output -> logMessage(run, PersistentLogDAO.DEBUG, "Output while running transformer %s/%s: <pre>%s</pre>", rs.uri, t.name, output));
                if (result == null) {
                   // this happens upon error
                   result = JsonNodeFactory.instance.nullNode();
@@ -1152,9 +1156,9 @@ public class RunServiceImpl implements RunService {
                   (result.isArray() && StreamSupport.stream(result.spliterator(), false).anyMatch(item -> !item.has("$schema")))) {
                logMessage(run, PersistentLogDAO.WARN, "Dataset will contain element without a schema.");
             }
-            JsonNode existing = transformerResults.get(transformerId);
+            JsonNode existing = transformerResults.get(rs.transformerId);
             if (existing == null) {
-               transformerResults.put(transformerId, result);
+               transformerResults.put(rs.transformerId, result);
             } else if (existing.isArray()) {
                if (result.isArray()) {
                   ((ArrayNode) existing).addAll((ArrayNode) result);
@@ -1164,29 +1168,29 @@ public class RunServiceImpl implements RunService {
             } else {
                if (result.isArray()) {
                   ((ArrayNode) result).insert(0, existing);
-                  transformerResults.put(transformerId, result);
+                  transformerResults.put(rs.transformerId, result);
                } else {
-                  transformerResults.put(transformerId, instance.arrayNode().add(existing).add(result));
+                  transformerResults.put(rs.transformerId, instance.arrayNode().add(existing).add(result));
                }
             }
          } else {
             JsonNode node;
-            JsonNode sourceNode = source == 0 ? run.data : run.metadata;
-            switch (type) {
+            JsonNode sourceNode = rs.source == 0 ? run.data : run.metadata;
+            switch (rs.type) {
                case SchemaDAO.TYPE_1ST_LEVEL:
                   node = sourceNode;
                   break;
                case SchemaDAO.TYPE_2ND_LEVEL:
-                  node = sourceNode.path(key);
+                  node = sourceNode.path(rs.key);
                   break;
                case SchemaDAO.TYPE_ARRAY_ELEMENT:
-                  node = sourceNode.path(Integer.parseInt(key));
+                  node = sourceNode.path(Integer.parseInt(rs.key));
                   break;
                default:
-                  throw new IllegalStateException("Unknown type " + type);
+                  throw new IllegalStateException("Unknown type " + rs.type);
             }
             nakedNodes.add(node);
-            logMessage(run, PersistentLogDAO.DEBUG, "This test (%d) does not use any transformer for schema %s (key %s), passing as-is.", run.testid, uri, key);
+            logMessage(run, PersistentLogDAO.DEBUG, "This test (%d) does not use any transformer for schema %s (key %s), passing as-is.", run.testid, rs.uri, rs.key);
          }
       }
       if (schemasAndTransformers > 0) {
