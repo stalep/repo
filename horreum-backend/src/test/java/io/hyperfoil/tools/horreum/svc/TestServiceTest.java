@@ -305,18 +305,16 @@ public class TestServiceTest extends BaseServiceTest {
       String s = readFile(p.resolve("quarkus_sb_schema.json").toFile());
       jsonRequest().body(s).post("/api/schema/import").then().statusCode(204);
       SchemaDAO schema = SchemaDAO.findAll().firstResult();
-      System.out.println("schema = " + schema);
+      assertEquals("urn:quarkus-sb-compare:0.1", schema.uri);
+      List<LabelDAO> labels =LabelDAO.find("schema.id", schema.id).list();
+      assertEquals(30, labels.size());
+      TransformerDAO transformer = TransformerDAO.find("schema.id", schema.id).firstResult();
+      assertEquals(12, transformer.extractors.size());
 
       String t = readFile(p.resolve("quarkus_sb_test.json").toFile());
       jsonRequest().body(t).post("/api/test/import").then().statusCode(204);
-      TestDAO test = TestDAO.<TestDAO>find("name", "quarkus-spring-boot-comparison").firstResult();
-      System.out.println("test = " + test);
-      assertEquals(1, test.transformers.size());
-
-      long count = (Long) em.unwrap(Session.class).createNativeQuery("select count(*) from dataset_schemas").getSingleResult();
-      System.out.println("count = " + count);
-      List<Object[]> dbSchemas = em.unwrap(Session.class).createNativeQuery("select * from dataset_schemas", Object[].class).getResultList();
-      dbSchemas.forEach(Arrays::toString);
+      TestDAO test = TestDAO.find("name", "quarkus-spring-boot-comparison").firstResult();
+      assertEquals(transformer.id, test.transformers.stream().findFirst().get().id);
 
       JsonNode data = mapper.readTree( readFile(p.resolve("quarkus_sb_run1.json").toFile()));
       Run r = new Run();
@@ -335,6 +333,12 @@ public class TestServiceTest extends BaseServiceTest {
 
       Thread.sleep(1000);
 
+      long count = (Long) em.unwrap(Session.class).createNativeQuery("select count(*) from dataset_schemas").getSingleResult();
+      System.out.println("count = " + count);
+      List<Object[]> dbSchemas = em.unwrap(Session.class).createNativeQuery("select * from dataset_schemas", Object[].class).getResultList();
+      dbSchemas.forEach(Arrays::toString);
+
+
       List<JsonNode> labelVales = jsonRequest().get("/api/test/"+test.id+"/labelValues")
               .then().statusCode(200).extract().body().as(new TypeRef<>() { });
 
@@ -343,7 +347,7 @@ public class TestServiceTest extends BaseServiceTest {
       List<DatasetDAO> datasets = DatasetDAO.listAll();
       datasets.forEach(System.out::println);
 
-      List<LabelDAO> labels = LabelDAO.listAll();
+      labels = LabelDAO.listAll();
       labels.forEach(System.out::println);
 
 

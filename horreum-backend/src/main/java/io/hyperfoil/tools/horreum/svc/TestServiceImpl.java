@@ -637,7 +637,11 @@ public class TestServiceImpl implements TestService {
             });
          }
 
+         int orginalId = dto.id;
          dto = add(dto);
+         //if we ended up with new id, make sure we force use this id when importing the rest
+         if(orginalId > 0 && orginalId != dto.id)
+            forceUseTestId = true;
       } catch (JsonProcessingException e) {
          throw ServiceException.badRequest("Failed to deserialize test: " + e.getMessage());
       }

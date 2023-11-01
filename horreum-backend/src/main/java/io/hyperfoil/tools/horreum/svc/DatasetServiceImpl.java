@@ -384,7 +384,6 @@ public class DatasetServiceImpl implements DatasetService {
       log.debugf("Calculating labels for dataset %d, label %d", datasetId, queryLabelId);
       List<Object[]> extracted;
       try {
-         System.out.println("testId = " + testId+", datasetId = "+datasetId+", labelId = "+queryLabelId);
          // Note: we are fetching even labels that are marked as private/could be otherwise inaccessible
          // to the uploading user. However, the uploader should not have rights to fetch these anyway...
          extracted =  (List<Object[]>) em.createNativeQuery(LABEL_QUERY)
@@ -396,9 +395,6 @@ public class DatasetServiceImpl implements DatasetService {
                      .addScalar("function", StandardBasicTypes.TEXT)
                      .addScalar("value", JsonBinaryType.INSTANCE)
                      .getResultList();
-
-         long count = (Long) em.unwrap(Session.class).createNativeQuery("select count(*) from dataset_schemas").getSingleResult();
-         System.out.println("count = " + count);
 
       } catch (PersistenceException e) {
          logMessageInNewTx(datasetId, PersistentLogDAO.ERROR, "Failed to extract data (JSONPath expression error?): " + Util.explainCauses(e));
