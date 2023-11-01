@@ -88,4 +88,14 @@ public class SchemaDAO extends ProtectedBaseEntity {
    @Column(columnDefinition = "jsonb")
    public JsonNode schema;
 
+   @Override
+   public String toString() {
+      return "SchemaDAO{" +
+              "id=" + id +
+              ", uri='" + uri + '\'' +
+              ", name='" + name + '\'' +
+              ", description='" + description + '\'' +
+              ", schema=" + schema +
+              '}';
+   }
 }

@@ -384,11 +384,13 @@ public class DatasetServiceImpl implements DatasetService {
       log.debugf("Calculating labels for dataset %d, label %d", datasetId, queryLabelId);
       List<Object[]> extracted;
       try {
+         System.out.println("testId = " + testId+", datasetId = "+datasetId+", labelId = "+queryLabelId);
          // Note: we are fetching even labels that are marked as private/could be otherwise inaccessible
          // to the uploading user. However, the uploader should not have rights to fetch these anyway...
-         extracted =  em.unwrap(Session.class).createNativeQuery(LABEL_QUERY, Object[].class)
+         extracted =  (List<Object[]>) em.createNativeQuery(LABEL_QUERY)
                      .setParameter(1, datasetId)
                      .setParameter(2, queryLabelId)
+                 .unwrap(NativeQuery.class)
                      .addScalar("label_id", StandardBasicTypes.INTEGER)
                      .addScalar("name", StandardBasicTypes.TEXT)
                      .addScalar("function", StandardBasicTypes.TEXT)

@@ -6,6 +6,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -1234,6 +1235,9 @@ public class RunServiceImpl implements RunService {
    private void createDataset(DatasetDAO ds, boolean isRecalculation) {
       try {
          ds.persistAndFlush();
+         List<Object[]> dbSchemas = session.createNativeQuery("select * from dataset_schemas", Object[].class).getResultList();
+         dbSchemas.forEach(objects -> Arrays.toString(objects));
+
          mediator.newDataset(new Dataset.EventNew(DatasetMapper.from(ds), isRecalculation));
          mediator.validateDataset(ds.id);
          if(mediator.testMode())

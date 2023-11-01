@@ -108,4 +108,25 @@ public class TestDAO extends PanacheEntityBase {
          });
       }
    }
+
+   @Override
+   public String toString() {
+      return "TestDAO{" +
+              "id=" + id +
+              ", name='" + name + '\'' +
+              ", folder='" + folder + '\'' +
+              ", description='" + description + '\'' +
+              ", owner='" + owner + '\'' +
+              ", access=" + access +
+              ", tokens=" + tokens +
+              ", timelineLabels=" + timelineLabels +
+              ", timelineFunction='" + timelineFunction + '\'' +
+              ", fingerprintLabels=" + fingerprintLabels +
+              ", fingerprintFilter='" + fingerprintFilter + '\'' +
+              ", views=" + views +
+              ", compareUrl='" + compareUrl + '\'' +
+              ", transformers=" + transformers +
+              ", notificationsEnabled=" + notificationsEnabled +
+              '}';
+   }
 }

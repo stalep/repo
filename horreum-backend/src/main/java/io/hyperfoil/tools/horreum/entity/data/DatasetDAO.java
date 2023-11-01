@@ -97,6 +97,24 @@ public class DatasetDAO extends OwnedEntityBase {
       }
    }
 
+   @Override
+   public String toString() {
+      return "DatasetDAO{" +
+              "id=" + id +
+              "\n start=" + start +
+              "\n stop=" + stop +
+              "\n description='" + description + '\'' +
+              "\n testid=" + testid +
+              "\n data=" + data +
+              "\n run=" + run.id +
+              "\n ordinal=" + ordinal +
+              "\n}";
+   }
+
+   public String data() {
+      return data.asText();
+   }
+
    public DatasetDAO.Info getInfo() {
       return new DatasetDAO.Info(id, run.id, ordinal, testid);
    }

@@ -26,6 +26,7 @@ import io.hyperfoil.tools.horreum.entity.alerting.*;
 import io.hyperfoil.tools.horreum.entity.data.*;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
+import org.hibernate.Session;
 import org.hibernate.query.NativeQuery;
 import org.junit.jupiter.api.TestInfo;
 
@@ -297,21 +298,28 @@ public class TestServiceTest extends BaseServiceTest {
    }
 
    @org.junit.jupiter.api.Test
-   public void testListLabelValues() throws JsonProcessingException {
+   public void testListLabelValues() throws JsonProcessingException, InterruptedException {
       Path p = new File(getClass().getClassLoader().getResource(".").getPath()).toPath();
       p = p.getParent().getParent().getParent().resolve("infra-legacy/example-data/");
 
       String s = readFile(p.resolve("quarkus_sb_schema.json").toFile());
       jsonRequest().body(s).post("/api/schema/import").then().statusCode(204);
+      SchemaDAO schema = SchemaDAO.findAll().firstResult();
+      System.out.println("schema = " + schema);
 
       String t = readFile(p.resolve("quarkus_sb_test.json").toFile());
       jsonRequest().body(t).post("/api/test/import").then().statusCode(204);
       TestDAO test = TestDAO.<TestDAO>find("name", "quarkus-spring-boot-comparison").firstResult();
+      System.out.println("test = " + test);
       assertEquals(1, test.transformers.size());
+
+      long count = (Long) em.unwrap(Session.class).createNativeQuery("select count(*) from dataset_schemas").getSingleResult();
+      System.out.println("count = " + count);
+      List<Object[]> dbSchemas = em.unwrap(Session.class).createNativeQuery("select * from dataset_schemas", Object[].class).getResultList();
+      dbSchemas.forEach(Arrays::toString);
 
       JsonNode data = mapper.readTree( readFile(p.resolve("quarkus_sb_run1.json").toFile()));
       Run r = new Run();
-//      assertEquals("dev-team", r.owner);
       r.owner = "foo-team";
       r.testid = test.id;
       r.data = data;
@@ -324,11 +332,17 @@ public class TestServiceTest extends BaseServiceTest {
               .post("/api/run/test");
       assertEquals(200, response.statusCode());
 
+
+      Thread.sleep(1000);
+
       List<JsonNode> labelVales = jsonRequest().get("/api/test/"+test.id+"/labelValues")
               .then().statusCode(200).extract().body().as(new TypeRef<>() { });
 
+      System.out.println("Number of datasets: "+DatasetDAO.count());
+
       List<DatasetDAO> datasets = DatasetDAO.listAll();
       datasets.forEach(System.out::println);
+
       List<LabelDAO> labels = LabelDAO.listAll();
       labels.forEach(System.out::println);
 
