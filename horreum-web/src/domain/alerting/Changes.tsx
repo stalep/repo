@@ -8,7 +8,15 @@ import PanelChart from "./PanelChart"
 import { fingerprintToString, formatDate } from "../../utils"
 import { teamsSelector } from "../../auth"
 import { DateTime } from "luxon"
-import {PanelInfo, AnnotationDefinition, TimeseriesTarget, alertingApi, testApi, changesApi} from "../../api"
+import {
+    PanelInfo,
+    AnnotationDefinition,
+    TimeseriesTarget,
+    alertingApi,
+    testApi,
+    changesApi,
+    Fingerprints,
+} from "../../api"
 
 import {
     Button,
@@ -144,7 +152,7 @@ function range(from: number, to: number) {
 
 export const fetchDatapoints = (
     variableIds: number[],
-    fingerprint: unknown,
+    fingerprint: Fingerprints[],
     from: number,
     to: number
 ): Promise<TimeseriesTarget[]> => {
@@ -161,7 +169,7 @@ export const fetchDatapoints = (
 
 export const fetchAnnotations = (
     variableId: number,
-    fingerprint: unknown,
+    fingerprint: Fingerprints[],
     from: number,
     to: number
 ): Promise<AnnotationDefinition[]> => {
@@ -176,7 +184,7 @@ export const fetchAnnotations = (
 
 export const fetchAllAnnotations = (
     variableIds: number[],
-    fingerprint: unknown,
+    fingerprint: Fingerprints[],
     from: number,
     to: number
 ): Promise<AnnotationDefinition[]> => {
@@ -254,7 +262,8 @@ export default function Changes() {
         // We need to prevent fetching dashboard until we are sure if we need the fingerprint
         if (selectedTest && !loadingFingerprints) {
             setLoadingPanels(true)
-            alertingApi.dashboard(selectedTest.id, fingerprintToString(selectedFingerprint))
+            alertingApi
+                .dashboard(selectedTest.id, fingerprintToString(selectedFingerprint))
                 .then(
                     response => {
                         setPanels(response.panels)
@@ -290,7 +299,8 @@ export default function Changes() {
             return Promise.resolve([])
         }
         setLoadingFingerprints(true)
-        return testApi.listFingerprints(selectedTest?.id)
+        return testApi
+            .listFingerprints(selectedTest?.id)
             .then(
                 response => {
                     setRequiresFingerprint(!!response && response.length > 1)
