@@ -1,4 +1,5 @@
 import { DateTime } from "luxon"
+import { Fingerprints } from "./generated"
 
 export function noop() {
     /* noop */
@@ -146,9 +147,11 @@ export function deepEquals(x: any, y: any) {
     } else return false
 }
 
-export function fingerprintToString(fingerprint: unknown) {
+export function fingerprintToString(fingerprint: Fingerprints[]) {
     if (!fingerprint) {
         return ""
     }
-    return JSON.stringify(fingerprint)
+    return fingerprint.map(fp => fp.values?.map(v => v.value))
+    // return fingerprint.values.map(v => v.value)
+    // return JSON.stringify(fingerprint)
 }
