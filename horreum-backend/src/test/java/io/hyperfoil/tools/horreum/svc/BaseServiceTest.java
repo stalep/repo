@@ -1056,4 +1056,23 @@ public class BaseServiceTest {
           .body()
           .as(TestService.TestListing.class);
    }
+
+   protected TestService.TestQueryResult listTests(String roles, int limit, int page, String sort, SortDirection direction) {
+      StringBuilder url = new StringBuilder("/api/test/summary");
+      url.append("&limit=").append(limit).append("&page=").append(page)
+              .append("&direction=").append(SortDirection.Ascending);
+      if (roles != null && !"".equals(roles))
+         url.append("&roles=").append(roles);
+      if (sort != null && !sort.isBlank())
+         url.append("&sort=").append(sort);
+
+      return jsonRequest()
+              .get(url.toString())
+              .then()
+              .statusCode(200)
+              .extract()
+              .body()
+              .as(TestService.TestQueryResult.class);
+   }
+
 }

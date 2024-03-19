@@ -70,7 +70,6 @@ public class TestServiceTest extends BaseServiceTest {
 
       jsonRequest().get("/api/test/summary?roles=__my").then().statusCode(200);
 
-
       BlockingQueue<Integer> events = eventConsumerQueue(Integer.class, MessageBusChannels.RUN_TRASHED, id -> id == runId);
       deleteTest(test);
       assertNotNull(events.poll(10, TimeUnit.SECONDS));
@@ -306,6 +305,8 @@ public class TestServiceTest extends BaseServiceTest {
       TestDAO test = TestDAO.<TestDAO>find("name", "quarkus-spring-boot-comparison").firstResult();
       assertEquals(1, test.transformers.size());
 
+      int runId = uploadRun("{ \"foo\" : \"bar\" }", test.name);
+
       List<SchemaService.SchemaDescriptor> descriptors = jsonRequest().get("/api/schema/descriptors")
               .then().statusCode(200).extract().body().as(new TypeRef<>() {});
       assertEquals("quarkus-sb-compare", descriptors.get(0).name);
@@ -313,6 +314,20 @@ public class TestServiceTest extends BaseServiceTest {
       List<ExperimentProfileDAO> experiments = ExperimentProfileDAO.list("test.id", test.id);
       assertEquals(1, experiments.size());
       assertNotNull( experiments.get(0).comparisons.get(0).variable);
+
+      List<String> folders = jsonRequest().get("/api/test/folders").then()
+              .statusCode(200).extract().as(new TypeRef<>() {});
+      assertEquals(2, folders.size());
+      assertEquals( "quarkus", folders.get(1));
+
+      TestService.TestListing listing = listTestSummary("__my", "quarkus", 10, 1, SortDirection.Ascending);
+
+      assertEquals(1, listing.count);
+      assertFalse(listing.tests.get(0).watching.isEmpty());
+
+      TestService.TestQueryResult queryResult = listTests("__my", 10, 1, "", SortDirection.Ascending);
+      assertEquals("quarkus-spring-boot-comparison", queryResult.tests.get(0).name);
+
    }
 
    @org.junit.jupiter.api.Test
