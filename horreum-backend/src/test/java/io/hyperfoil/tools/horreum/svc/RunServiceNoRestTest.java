@@ -4,10 +4,7 @@ import static io.hyperfoil.tools.horreum.svc.BaseServiceNoRestTest.DEFAULT_USER;
 import static io.hyperfoil.tools.horreum.svc.BaseServiceNoRestTest.FOO_TEAM;
 import static io.hyperfoil.tools.horreum.svc.BaseServiceNoRestTest.FOO_TESTER;
 import static io.hyperfoil.tools.horreum.svc.BaseServiceNoRestTest.FOO_UPLOADER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
@@ -17,10 +14,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
-import io.hyperfoil.tools.horreum.api.data.Access;
-import io.hyperfoil.tools.horreum.api.data.Run;
-import io.hyperfoil.tools.horreum.api.data.Test;
+import io.hyperfoil.tools.horreum.api.data.*;
 import io.hyperfoil.tools.horreum.api.services.RunService;
+import io.hyperfoil.tools.horreum.api.services.SchemaService;
 import io.hyperfoil.tools.horreum.api.services.TestService;
 import io.hyperfoil.tools.horreum.entity.data.RunDAO;
 import io.hyperfoil.tools.horreum.entity.data.TestDAO;
@@ -44,6 +40,9 @@ class RunServiceNoRestTest extends BaseServiceNoRestTest {
 
     @Inject
     TestService testService;
+
+    @Inject
+    SchemaService schemaService;
 
     @Inject
     ObjectMapper objectMapper;
